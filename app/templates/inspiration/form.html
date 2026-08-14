@@ -12,7 +12,34 @@
 </div>
 
 <div class="card" style="max-width:640px;">
-  <form method="POST">
+  <form method="POST" id="inspiration-form">
+
+    <!-- ── Link row with Analyze button ── -->
+    <div class="form-group">
+      <label class="form-label" for="link">Link / URL</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="form-control" type="url" id="link" name="link"
+               value="{{ item.link or '' if item else '' }}"
+               placeholder="Paste any link — Instagram, YouTube, LinkedIn, website…"
+               style="flex:1;">
+        <button type="button" id="analyze-btn"
+                style="white-space:nowrap;padding:0 18px;height:42px;border-radius:var(--radius-input);
+                       background:var(--lavender);border:none;color:#fff;font-family:inherit;
+                       font-size:13px;font-weight:700;cursor:pointer;transition:opacity .2s;
+                       display:flex;align-items:center;gap:6px;">
+          <span id="analyze-spinner" style="display:none;">⏳</span>
+          <span id="analyze-label">✨ Analyze</span>
+        </button>
+      </div>
+      <!-- summary banner — shown after analysis -->
+      <div id="analyze-summary"
+           style="display:none;margin-top:8px;padding:10px 14px;border-radius:10px;
+                  background:var(--surface);border:1px solid var(--border);
+                  font-size:13px;color:var(--muted);line-height:1.5;">
+      </div>
+    </div>
+
+    <!-- ── Platform + Category row ── -->
     <div class="form-row">
       <div class="form-group">
         <label class="form-label" for="platform">Platform</label>
@@ -25,14 +52,11 @@
       <div class="form-group">
         <label class="form-label" for="category">Category</label>
         <input class="form-control" type="text" id="category" name="category"
-               value="{{ item.category or '' if item else '' }}" placeholder="e.g. Personal Branding">
+               value="{{ item.category or '' if item else '' }}"
+               placeholder="e.g. Personal Branding">
       </div>
     </div>
-    <div class="form-group">
-      <label class="form-label" for="link">Link / URL</label>
-      <input class="form-control" type="url" id="link" name="link"
-             value="{{ item.link or '' if item else '' }}" placeholder="https://...">
-    </div>
+
     <div class="form-group">
       <label class="form-label" for="why_saved">Why did you save this?</label>
       <textarea class="form-control" id="why_saved" name="why_saved"
@@ -41,7 +65,7 @@
     <div class="form-group">
       <label class="form-label" for="what_learned">What did you learn?</label>
       <textarea class="form-control" id="what_learned" name="what_learned"
-                placeholder="Key takeaways...">{{ item.what_learned or '' if item else '' }}</textarea>
+                placeholder="Key takeaways…">{{ item.what_learned or '' if item else '' }}</textarea>
     </div>
     <div class="form-group">
       <label class="form-label" for="action_to_take">Action to take</label>
@@ -49,14 +73,99 @@
                 placeholder="What will you do because of this?">{{ item.action_to_take or '' if item else '' }}</textarea>
     </div>
     <div class="form-group">
-      <label class="form-label" for="related_profile">Related Profile</label>
+      <label class="form-label" for="related_profile">Related Profile / Creator</label>
       <input class="form-control" type="text" id="related_profile" name="related_profile"
-             value="{{ item.related_profile or '' if item else '' }}" placeholder="e.g. HR, Marketing">
+             value="{{ item.related_profile or '' if item else '' }}"
+             placeholder="e.g. @creator, HR, Marketing">
     </div>
+
     <div class="flex gap-2">
-      <button type="submit" class="btn btn-primary">{{ 'Save Changes' if action == 'Edit' else 'Save Inspiration' }} ✨</button>
+      <button type="submit" class="btn btn-primary">
+        {{ 'Save Changes' if action == 'Edit' else 'Save Inspiration' }} ✨
+      </button>
       <a href="{{ url_for('inspiration.index') }}" class="btn btn-outline">Cancel</a>
     </div>
   </form>
 </div>
+
+<script>
+(function () {
+  const btn      = document.getElementById('analyze-btn');
+  const spinner  = document.getElementById('analyze-spinner');
+  const label    = document.getElementById('analyze-label');
+  const summary  = document.getElementById('analyze-summary');
+
+  const fields = {
+    platform:       document.getElementById('platform'),
+    category:       document.getElementById('category'),
+    why_saved:      document.getElementById('why_saved'),
+    what_learned:   document.getElementById('what_learned'),
+    action_to_take: document.getElementById('action_to_take'),
+    related_profile:document.getElementById('related_profile'),
+  };
+
+  // Highlight a field briefly when it gets filled
+  function flash(el) {
+    el.style.transition = 'background .25s';
+    el.style.background = '#f5eefa';
+    setTimeout(() => { el.style.background = ''; }, 900);
+  }
+
+  btn.addEventListener('click', async function () {
+    const url = document.getElementById('link').value.trim();
+    if (!url) {
+      summary.style.display = 'block';
+      summary.style.color   = 'var(--danger)';
+      summary.textContent   = '⚠️ Please paste a URL first.';
+      return;
+    }
+
+    // Loading state
+    btn.disabled   = true;
+    spinner.style.display = 'inline';
+    label.textContent     = 'Analyzing…';
+    summary.style.display = 'none';
+
+    try {
+      const res  = await fetch('{{ url_for("inspiration.analyze") }}', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ url }),
+      });
+      const data = await res.json();
+
+      if (data.error) throw new Error(data.error);
+
+      // Fill platform <select>
+      for (const opt of fields.platform.options) {
+        if (opt.value === data.platform) { opt.selected = true; break; }
+      }
+      flash(fields.platform);
+
+      // Fill text fields only when they are empty (don't overwrite user edits)
+      const textFields = ['category','why_saved','what_learned','action_to_take','related_profile'];
+      for (const key of textFields) {
+        if (!fields[key].value.trim()) {
+          fields[key].value = data[key] || '';
+          flash(fields[key]);
+        }
+      }
+
+      // Show summary banner
+      summary.style.display = 'block';
+      summary.style.color   = 'var(--muted)';
+      summary.innerHTML     = `<strong>🔍 Detected:</strong> ${data.summary}`;
+
+    } catch (err) {
+      summary.style.display = 'block';
+      summary.style.color   = 'var(--danger)';
+      summary.textContent   = '⚠️ Could not analyze link. Fill fields manually.';
+    } finally {
+      btn.disabled          = false;
+      spinner.style.display = 'none';
+      label.textContent     = '✨ Analyze';
+    }
+  });
+})();
+</script>
 {% endblock %}
