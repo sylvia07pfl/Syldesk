@@ -267,10 +267,44 @@ _CATEGORY_RULES: list[tuple[list[str], str]] = [
 ]
 
 
+# Domain → category overrides (checked before keyword rules)
+_DOMAIN_OVERRIDES = {
+    "hbr.org":            "Business Strategy",
+    "forbes.com":         "Business Strategy",
+    "inc.com":            "Entrepreneurship",
+    "harvard.edu":        "Research",
+    "mckinsey.com":       "Consulting",
+    "bcg.com":            "Consulting",
+    "bain.com":           "Consulting",
+    "deloitte.com":       "Consulting",
+    "pwc.com":            "Consulting",
+    "bloomberg.com":      "Finance",
+    "ft.com":             "Finance",
+    "economist.com":      "Business Strategy",
+    "vogue.com":          "Fashion",
+    "harpersbazaar.com":  "Fashion",
+    "businessoffashion.com": "Luxury",
+    "highsnobiety.com":   "Luxury",
+    "notion.so":          "Productivity",
+    "github.com":         "Research",
+    "arxiv.org":          "Research",
+    "medium.com":         "Article / Blog",
+    "substack.com":       "Article / Blog",
+}
+
+
 def classify(url: str, title: str, description: str, platform: str) -> str:
     """Return the best-matching AI category for the content."""
+    # 1. Domain-level override (highest priority)
+    from urllib.parse import urlparse as _up
+    host = _up(url).netloc.lower().lstrip("www.")
+    for domain, cat in _DOMAIN_OVERRIDES.items():
+        if domain in host:
+            return cat
+
     haystack = " ".join([url, title, description, platform]).lower()
 
+    # 2. Keyword rules
     for keywords, category in _CATEGORY_RULES:
         for kw in keywords:
             if kw in haystack:
