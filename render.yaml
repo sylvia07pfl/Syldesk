@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: syldesk
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r requirements.txt && python migrate_v2.py"
+    startCommand: "python run.py"
+    envVars:
+      - key: FLASK_CONFIG
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.11.0
