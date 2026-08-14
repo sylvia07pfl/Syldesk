@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Syldesk — Your Career, Beautifully Organized</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #fdf8f5;
+      --surface: #fff0f3;
+      --card:    #fff5f7;
+      --accent:  #e8a0b4;
+      --accent2: #d4a0c0;
+      --text:    #4a3540;
+      --muted:   #9b7b8a;
+      --border:  #f0d9e2;
+      --success: #a8c5a0;
+      --info:    #a8c5d8;
+      --lavender:#c8b4d8;
+      --warning: #e8c49a;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: 'Nunito', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { color: var(--accent); }
+
+    /* ===== NAV ===== */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 40px;
+      background: rgba(253,248,245,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .nav-logo .logo-badge {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .nav-logo span { color: var(--accent2); }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { font-size: 0.9rem; font-weight: 600; color: var(--muted); transition: color 0.2s; }
+    .nav-links a:hover { color: var(--accent2); }
+    .btn-nav {
+      padding: 8px 20px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 2px 10px rgba(200,140,160,0.25);
+      transition: all 0.2s;
+    }
+    .btn-nav:hover {
+      box-shadow: 0 4px 18px rgba(200,140,160,0.4);
+      transform: translateY(-1px);
+      color: white;
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 100px 24px 60px;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg,
+        #d8eef8 0%,
+        #edf4fb 18%,
+        #f8f0f5 40%,
+        #fdf8f5 60%,
+        #fff0f3 80%,
+        #fce8ef 100%
+      );
+    }
+
+    /* Animated floating blobs */
+    .hero-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.25;
+      animation: floatBlob 8s ease-in-out infinite;
+    }
+    .blob1 { width: 340px; height: 340px; background: var(--accent); top: 10%; left: 5%; animation-delay: 0s; }
+    .blob2 { width: 260px; height: 260px; background: var(--lavender); top: 30%; right: 8%; animation-delay: 2s; }
+    .blob3 { width: 200px; height: 200px; background: var(--info); bottom: 20%; left: 15%; animation-delay: 4s; }
+    @keyframes floatBlob {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-20px) scale(1.04); }
+    }
+
+    /* SVG hills */
+    .hero-hills {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      line-height: 0;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 720px;
+    }
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,240,243,0.85);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 16px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 24px;
+      backdrop-filter: blur(8px);
+    }
+    .hero h1 {
+      font-size: clamp(2.2rem, 6vw, 3.6rem);
+      font-weight: 900;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+    .hero h1 .gradient-text {
+      background: linear-gradient(135deg, var(--accent), var(--accent2), var(--lavender));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--muted);
+      max-width: 540px;
+      margin: 0 auto 36px;
+      line-height: 1.75;
+    }
+    .hero-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .btn-hero-primary {
+      padding: 14px 34px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border-radius: 14px;
+      font-weight: 800;
+      font-size: 1rem;
+      box-shadow: 0 4px 20px rgba(200,140,160,0.3);
+      transition: all 0.2s;
+    }
+    .btn-hero-primary:hover {
+      box-shadow: 0 8px 30px rgba(200,140,160,0.45);
+      transform: translateY(-2px);
+      color: white;
+    }
+    .btn-hero-secondary {
+      padding: 14px 28px;
+      background: white;
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    .btn-hero-secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent2);
+      box-shadow: 0 4px 16px rgba(200,140,160,0.15);
+    }
+
+    .hero-stats {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 48px;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 2;
+    }
+    .hero-stat .num { font-size: 1.8rem; font-weight: 900; color: var(--text); }
+    .hero-stat .lbl { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+
+    /* ===== FEATURES ===== */
+    .section {
+      padding: 80px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .section-header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+    .section-header .eyebrow {
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 10px;
+    }
+    .section-header h2 {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+    .section-header p { font-size: 1rem; color: var(--muted); max-width: 520px; margin: 0 auto; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 900px) { .features-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 580px) { .features-grid { grid-template-columns: 1fr; } }
+
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 26px 22px;
+      transition: box-shadow 0.2s, transform 0.2s;
+      box-shadow: 0 2px 12px rgba(200,140,160,0.08);
+    }
+    .feature-card:hover {
+      box-shadow: 0 8px 28px rgba(200,140,160,0.18);
+      transform: translateY(-4px);
+    }
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      display: inline-block;
+    }
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .feature-card p { font-size: 0.88rem; color: var(--muted); line-height: 1.65; }
+    .feature-badge {
+      display: inline-flex;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+    .fb-pink   { background: rgba(232,160,180,0.2); color: #b0607a; }
+    .fb-purple { background: rgba(200,180,216,0.25); color: #7a5a9a; }
+    .fb-blue   { background: rgba(168,197,216,0.25); color: #3a7a9a; }
+    .fb-green  { background: rgba(168,197,160,0.25); color: #5a9a52; }
+    .fb-yellow { background: rgba(232,196,154,0.3); color: #a07030; }
+
+    /* ===== HOW IT WORKS ===== */
+    .steps-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 24px;
+      text-align: center;
+    }
+    @media (max-width: 700px) { .steps-row { grid-template-columns: 1fr; } }
+    .step-num {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin: 0 auto 12px;
+    }
+    .step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+    .step p { font-size: 0.88rem; color: var(--muted); }
+
+    /* ===== CTA ===== */
+    .cta-section {
+      background: linear-gradient(135deg, #fce8ef, #f0e0f0, #e8f0fc);
+      padding: 80px 24px;
+      text-align: center;
+    }
+    .cta-section h2 {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+    .cta-section p {
+      font-size: 1rem;
+      color: var(--muted);
+      margin-bottom: 36px;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 32px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    footer .footer-logo { font-size: 1rem; font-weight: 800; color: var(--text); }
+    footer .footer-logo span { color: var(--accent2); }
+    footer p { font-size: 0.82rem; color: var(--muted); }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <div class="logo-badge">🌸</div>
+    Syl<span>desk</span>
+  </div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="{{ url_for('auth.login') }}">Sign in</a>
+    <a href="{{ url_for('auth.signup') }}" class="btn-nav">Get Started 🚀</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-blob blob1"></div>
+  <div class="hero-blob blob2"></div>
+  <div class="hero-blob blob3"></div>
+
+  <div class="hero-content">
+    <div class="hero-tag">🌸 Private · Organized · Yours</div>
+    <h1>
+      Your Career,<br>
+      <span class="gradient-text">Beautifully Organized</span>
+    </h1>
+    <p>
+      Syldesk is your all-in-one career operating system — track opportunities,
+      build skills, manage applications, log inspiration, and stay ahead of every deadline.
+    </p>
+    <div class="hero-cta">
+      <a href="{{ url_for('auth.signup') }}" class="btn-hero-primary">Start Your Journey ✨</a>
+      <a href="{{ url_for('auth.login') }}" class="btn-hero-secondary">Sign In →</a>
+    </div>
+  </div>
+
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="num">9</div><div class="lbl">Modules</div></div>
+    <div class="hero-stat"><div class="num">100%</div><div class="lbl">Private</div></div>
+    <div class="hero-stat"><div class="num">∞</div><div class="lbl">Possibilities</div></div>
+  </div>
+
+  <!-- Soft SVG hills -->
+  <div class="hero-hills">
+    <svg viewBox="0 0 1440 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="width:100%;display:block;">
+      <path d="M0,80 C240,120 480,30 720,70 C960,110 1200,40 1440,80 L1440,120 L0,120 Z" fill="#fdf8f5"/>
+    </svg>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-header">
+    <div class="eyebrow">Everything you need</div>
+    <h2>Nine modules, one beautiful desk 🌷</h2>
+    <p>Each module is crafted to support a different part of your career journey.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">💼</div>
+      <h3>Opportunities</h3>
+      <p>Save internships, jobs, fellowships, and more. Pin, star, filter by priority, and never miss a deadline.</p>
+      <span class="feature-badge fb-pink">Career</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <h3>Application Tracker</h3>
+      <p>Track every application from "Saved" to "Offer Received". Log interview dates and follow-up reminders.</p>
+      <span class="feature-badge fb-purple">Tracking</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👤</div>
+      <h3>Profiles</h3>
+      <p>Maintain separate career profiles — HR, Marketing, Consulting, MBA — each with its own resume notes and cover letter.</p>
+      <span class="feature-badge fb-blue">Identity</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📚</div>
+      <h3>Skills Roadmap</h3>
+      <p>Build structured roadmaps for every target role. Track skill-by-skill progress with visual progress bars.</p>
+      <span class="feature-badge fb-green">Growth</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🚀</div>
+      <h3>Projects</h3>
+      <p>Document your projects, link GitHub repos and demos, track status, and showcase your work.</p>
+      <span class="feature-badge fb-purple">Portfolio</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📖</div>
+      <h3>Study Library</h3>
+      <p>Store PDFs, notes, YouTube links, and documents by category — CAT, HR, AI, Excel, and more.</p>
+      <span class="feature-badge fb-blue">Learning</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">✨</div>
+      <h3>Inspiration Board</h3>
+      <p>Save inspiring links from Instagram, LinkedIn, YouTube. Capture why it resonated and what to do next.</p>
+      <span class="feature-badge fb-pink">Mindset</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🛡️</div>
+      <h3>Backup Plan</h3>
+      <p>Track alternative paths — government exams, certifications, skill courses — so you always have options.</p>
+      <span class="feature-badge fb-yellow">Safety net</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏠</div>
+      <h3>Dashboard</h3>
+      <p>A unified overview of your entire career OS — stats, upcoming deadlines, pinned items, and recent activity.</p>
+      <span class="feature-badge fb-green">Overview</span>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section style="background: var(--surface); padding: 80px 24px;" id="how">
+  <div style="max-width:900px;margin:0 auto;">
+    <div class="section-header">
+      <div class="eyebrow">Simple as that</div>
+      <h2>How Syldesk works 🌸</h2>
+      <p>Three steps to a beautifully organized career</p>
+    </div>
+    <div class="steps-row">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Sign up for free</h3>
+        <p>Create your private account. No clutter, no noise — just a clean space that's entirely yours.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Add what matters</h3>
+        <p>Log opportunities, track applications, build skill roadmaps, and save inspiration as you discover them.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Stay ahead always</h3>
+        <p>Your dashboard surfaces deadlines, progress, and priorities so you always know your next move.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>Ready to organize your career? 🌷</h2>
+  <p>Join Syldesk and turn career chaos into calm, focused progress.</p>
+  <a href="{{ url_for('auth.signup') }}" class="btn-hero-primary" style="display:inline-flex;align-items:center;gap:8px;font-size:1.05rem;">
+    Start Your Journey ✨
+  </a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-logo">Syl<span>desk</span> 🌸</div>
+    <p style="margin-top:4px;">Your private career operating system</p>
+  </div>
+  <div>
+    <p>Built with love for ambitious careers 🌷</p>
+  </div>
+</footer>
+
+</body>
+</html>

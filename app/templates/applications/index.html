@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Applications{% endblock %}
+{% block page_title %}Applications{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>📋 Application Tracker</h1>
+    <p class="subtitle">Track every job and internship application from start to finish</p>
+  </div>
+  <a href="{{ url_for('applications.new') }}" class="btn btn-primary">+ Track Application</a>
+</div>
+
+<div class="filter-bar">
+  <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;">
+    <select name="status" onchange="this.form.submit()">
+      <option value="">All Statuses</option>
+      {% for s in statuses %}
+        <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    {% if status_filter %}
+      <a href="{{ url_for('applications.index') }}" class="btn btn-outline btn-sm">✕ Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if items %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>Company</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Applied</th>
+        <th>Deadline</th>
+        <th>Interview</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td class="fw-700">{{ item.company }}</td>
+        <td class="text-muted fs-sm">{{ item.role or '—' }}</td>
+        <td>
+          {% if item.status == 'Offer Received' %}<span class="badge badge-green">{{ item.status }}</span>
+          {% elif item.status in ['Interview Scheduled', 'Interview Completed'] %}<span class="badge badge-blue">{{ item.status }}</span>
+          {% elif item.status == 'Shortlisted' %}<span class="badge badge-purple">{{ item.status }}</span>
+          {% elif item.status == 'Rejected' %}<span class="badge badge-red">{{ item.status }}</span>
+          {% elif item.status == 'Applied' %}<span class="badge badge-yellow">{{ item.status }}</span>
+          {% else %}<span class="badge badge-muted">{{ item.status }}</span>{% endif %}
+        </td>
+        <td class="fs-sm">{{ item.applied_date.strftime('%b %d') if item.applied_date else '—' }}</td>
+        <td class="fs-sm">{{ item.deadline.strftime('%b %d') if item.deadline else '—' }}</td>
+        <td class="fs-sm">{{ item.interview_date.strftime('%b %d') if item.interview_date else '—' }}</td>
+        <td>
+          <div class="flex gap-2">
+            <a href="{{ url_for('applications.edit', app_id=item.id) }}" class="btn btn-outline btn-sm">Edit</a>
+            <form method="POST" action="{{ url_for('applications.delete', app_id=item.id) }}"
+                  onsubmit="return confirm('Delete this entry?')">
+              <button type="submit" class="btn btn-danger btn-sm">✕</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">📋</div>
+  <h3>No applications tracked yet</h3>
+  <p>Start tracking your applications to stay on top of every status.</p>
+  <a href="{{ url_for('applications.new') }}" class="btn btn-primary mt-3">+ Track Application</a>
+</div>
+{% endif %}
+{% endblock %}

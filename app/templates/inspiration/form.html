@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Inspiration{% endblock %}
+{% block page_title %}{{ action }} Inspiration{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ '✏️ Edit' if action == 'Edit' else '+ New' }} Inspiration</h1>
+    <p class="subtitle">Save something that inspires your career journey</p>
+  </div>
+  <a href="{{ url_for('inspiration.index') }}" class="btn btn-outline">← Back</a>
+</div>
+
+<div class="card" style="max-width:640px;">
+  <form method="POST">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="platform">Platform</label>
+        <select class="form-control" id="platform" name="platform">
+          {% for p in platforms %}
+            <option value="{{ p }}" {% if item and item.platform == p %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="category">Category</label>
+        <input class="form-control" type="text" id="category" name="category"
+               value="{{ item.category or '' if item else '' }}" placeholder="e.g. Personal Branding">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="link">Link / URL</label>
+      <input class="form-control" type="url" id="link" name="link"
+             value="{{ item.link or '' if item else '' }}" placeholder="https://...">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="why_saved">Why did you save this?</label>
+      <textarea class="form-control" id="why_saved" name="why_saved"
+                placeholder="What caught your attention?">{{ item.why_saved or '' if item else '' }}</textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="what_learned">What did you learn?</label>
+      <textarea class="form-control" id="what_learned" name="what_learned"
+                placeholder="Key takeaways...">{{ item.what_learned or '' if item else '' }}</textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="action_to_take">Action to take</label>
+      <textarea class="form-control" id="action_to_take" name="action_to_take"
+                placeholder="What will you do because of this?">{{ item.action_to_take or '' if item else '' }}</textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="related_profile">Related Profile</label>
+      <input class="form-control" type="text" id="related_profile" name="related_profile"
+             value="{{ item.related_profile or '' if item else '' }}" placeholder="e.g. HR, Marketing">
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary">{{ 'Save Changes' if action == 'Edit' else 'Save Inspiration' }} ✨</button>
+      <a href="{{ url_for('inspiration.index') }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

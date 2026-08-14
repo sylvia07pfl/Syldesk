@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>🔔 Notifications</h1>
+    <p class="subtitle">Stay updated on your career activities</p>
+  </div>
+  {% if items %}
+  <form method="POST" action="{{ url_for('notifications.mark_all_read') }}">
+    <button type="submit" class="btn btn-outline btn-sm">✓ Mark all read</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if items %}
+<div style="display:flex;flex-direction:column;gap:10px;max-width:720px;">
+  {% for item in items %}
+  <div class="card {% if not item.is_read %}{% endif %}"
+       style="{{ 'border-left: 3px solid var(--accent);' if not item.is_read else '' }}">
+    <div class="flex-between">
+      <div>
+        <div class="fw-700">{{ item.title }}</div>
+        {% if item.message %}<div class="text-muted fs-sm mt-1">{{ item.message }}</div>{% endif %}
+        <div class="text-muted fs-sm mt-1">{{ item.created_at.strftime('%b %d, %Y · %I:%M %p') }}</div>
+      </div>
+      <div class="flex gap-2">
+        {% if not item.is_read %}
+        <form method="POST" action="{{ url_for('notifications.mark_read', notif_id=item.id) }}">
+          <button type="submit" class="btn btn-outline btn-sm">Read</button>
+        </form>
+        {% endif %}
+        <form method="POST" action="{{ url_for('notifications.delete', notif_id=item.id) }}"
+              onsubmit="return confirm('Delete this notification?')">
+          <button type="submit" class="btn btn-danger btn-sm">✕</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">🔔</div>
+  <h3>No notifications</h3>
+  <p>You're all caught up!</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Profiles{% endblock %}
+{% block page_title %}Profiles{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>👤 Career Profiles</h1>
+    <p class="subtitle">Manage your resume, portfolio, and cover letter for each career track</p>
+  </div>
+  <a href="{{ url_for('profiles.new') }}" class="btn btn-primary">+ New Profile</a>
+</div>
+
+{% if items %}
+<div class="grid-3">
+  {% for item in items %}
+  <div class="card">
+    <div class="flex-between mb-2">
+      <span class="badge badge-lavender" style="background:rgba(200,180,216,0.25);color:#7a5a9a;">{{ item.profile_type }}</span>
+      <div class="flex gap-2">
+        <a href="{{ url_for('profiles.detail', profile_id=item.id) }}" class="btn btn-outline btn-sm">View</a>
+        <form method="POST" action="{{ url_for('profiles.delete', profile_id=item.id) }}"
+              onsubmit="return confirm('Delete this profile?')">
+          <button type="submit" class="btn btn-danger btn-sm">✕</button>
+        </form>
+      </div>
+    </div>
+    <div class="card-title">{{ item.profile_type }} Profile</div>
+    {% if item.profile_score is not none %}
+    <div class="flex-between mt-2 mb-1">
+      <span class="text-muted fs-sm">Profile score</span>
+      <span class="fw-700 fs-sm">{{ item.profile_score }}%</span>
+    </div>
+    <div class="progress">
+      <div class="progress-bar" style="width: {{ item.profile_score }}%"></div>
+    </div>
+    {% endif %}
+    <div class="text-muted fs-sm mt-2">Updated {{ item.updated_at.strftime('%b %d, %Y') }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">👤</div>
+  <h3>No profiles yet</h3>
+  <p>Create separate profiles for each career track — HR, Marketing, MBA, and more.</p>
+  <a href="{{ url_for('profiles.new') }}" class="btn btn-primary mt-3">+ Create Profile</a>
+</div>
+{% endif %}
+{% endblock %}

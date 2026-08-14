@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Application{% endblock %}
+{% block page_title %}Applications{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ '✏️ Edit' if action == 'Edit' else '+ Track New' }} Application</h1>
+    <p class="subtitle">{{ 'Update application details' if action == 'Edit' else 'Log a new application to track' }}</p>
+  </div>
+  <a href="{{ url_for('applications.index') }}" class="btn btn-outline">← Back</a>
+</div>
+
+<div class="card" style="max-width:700px;">
+  <form method="POST">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="company">Company *</label>
+        <input class="form-control" type="text" id="company" name="company"
+               value="{{ item.company if item else '' }}" required placeholder="Company name">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="role">Role</label>
+        <input class="form-control" type="text" id="role" name="role"
+               value="{{ item.role or '' if item else '' }}" placeholder="Job title">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="status">Status</label>
+      <select class="form-control" id="status" name="status">
+        {% for s in statuses %}
+          <option value="{{ s }}" {% if item and item.status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="applied_date">Applied Date</label>
+        <input class="form-control" type="date" id="applied_date" name="applied_date"
+               value="{{ item.applied_date.strftime('%Y-%m-%d') if item and item.applied_date else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="deadline">Deadline</label>
+        <input class="form-control" type="date" id="deadline" name="deadline"
+               value="{{ item.deadline.strftime('%Y-%m-%d') if item and item.deadline else '' }}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="interview_date">Interview Date</label>
+        <input class="form-control" type="date" id="interview_date" name="interview_date"
+               value="{{ item.interview_date.strftime('%Y-%m-%d') if item and item.interview_date else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="follow_up_reminder">Follow-up Reminder</label>
+        <input class="form-control" type="date" id="follow_up_reminder" name="follow_up_reminder"
+               value="{{ item.follow_up_reminder.strftime('%Y-%m-%d') if item and item.follow_up_reminder else '' }}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="result">Result</label>
+      <input class="form-control" type="text" id="result" name="result"
+             value="{{ item.result or '' if item else '' }}" placeholder="e.g. Got shortlisted, rejected...">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="notes">Notes</label>
+      <textarea class="form-control" id="notes" name="notes"
+                placeholder="Interview prep notes, contacts, etc.">{{ item.notes or '' if item else '' }}</textarea>
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary">{{ 'Save Changes' if action == 'Edit' else 'Track Application' }} 📋</button>
+      <a href="{{ url_for('applications.index') }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

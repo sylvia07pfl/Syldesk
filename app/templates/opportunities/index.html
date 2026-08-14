@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Opportunities{% endblock %}
+{% block page_title %}Opportunities{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>💼 Opportunities</h1>
+    <p class="subtitle">Track internships, jobs, fellowships, and more</p>
+  </div>
+  <a href="{{ url_for('opportunities.new') }}" class="btn btn-primary">+ Add Opportunity</a>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <form method="GET" action="{{ url_for('opportunities.index') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <select name="status" onchange="this.form.submit()">
+      <option value="">All Statuses</option>
+      {% for s in statuses %}
+        <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    <select name="category" onchange="this.form.submit()">
+      <option value="">All Categories</option>
+      {% for c in categories %}
+        <option value="{{ c }}" {% if category_filter == c %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    <select name="priority" onchange="this.form.submit()">
+      <option value="">All Priorities</option>
+      {% for p in priorities %}
+        <option value="{{ p }}" {% if priority_filter == p %}selected{% endif %}>{{ p }}</option>
+      {% endfor %}
+    </select>
+    {% if status_filter or category_filter or priority_filter %}
+      <a href="{{ url_for('opportunities.index') }}" class="btn btn-outline btn-sm">✕ Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if items %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Company</th>
+        <th>Category</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Deadline</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for opp in items %}
+      <tr>
+        <td>
+          {% if opp.is_pinned %}<span title="Pinned">📌</span> {% endif %}
+          {% if opp.is_starred %}<span title="Starred">⭐</span> {% endif %}
+          <span class="fw-700">{{ opp.title }}</span>
+          {% if opp.link %}<a href="{{ opp.link }}" target="_blank" rel="noopener" class="text-muted fs-sm" style="margin-left:6px;">↗</a>{% endif %}
+        </td>
+        <td class="text-muted fs-sm">{{ opp.company or '—' }}</td>
+        <td><span class="badge badge-purple">{{ opp.category }}</span></td>
+        <td>
+          {% if opp.priority == 'High' %}<span class="badge badge-pink">High</span>
+          {% elif opp.priority == 'Medium' %}<span class="badge badge-yellow">Med</span>
+          {% else %}<span class="badge badge-muted">Low</span>{% endif %}
+        </td>
+        <td>
+          {% if opp.status == 'Saved' %}<span class="badge badge-muted">Saved</span>
+          {% elif opp.status == 'Applied' %}<span class="badge badge-blue">Applied</span>
+          {% elif opp.status == 'Shortlisted' %}<span class="badge badge-green">Shortlisted</span>
+          {% elif opp.status == 'Rejected' %}<span class="badge badge-red">Rejected</span>
+          {% else %}<span class="badge badge-muted">{{ opp.status }}</span>{% endif %}
+        </td>
+        <td class="fs-sm">{{ opp.deadline.strftime('%b %d, %Y') if opp.deadline else '—' }}</td>
+        <td>
+          <div class="flex gap-2">
+            <a href="{{ url_for('opportunities.edit', opp_id=opp.id) }}" class="btn btn-outline btn-sm">Edit</a>
+            <form method="POST" action="{{ url_for('opportunities.toggle_pin', opp_id=opp.id) }}" style="display:inline">
+              <button type="submit" class="btn btn-outline btn-sm" title="{{ 'Unpin' if opp.is_pinned else 'Pin' }}">
+                {{ '📌' if opp.is_pinned else '📍' }}
+              </button>
+            </form>
+            <form method="POST" action="{{ url_for('opportunities.delete', opp_id=opp.id) }}" style="display:inline"
+                  onsubmit="return confirm('Delete this opportunity?')">
+              <button type="submit" class="btn btn-danger btn-sm">✕</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">💼</div>
+  <h3>No opportunities yet</h3>
+  <p>Start tracking your first opportunity today.</p>
+  <a href="{{ url_for('opportunities.new') }}" class="btn btn-primary mt-3">+ Add Opportunity</a>
+</div>
+{% endif %}
+{% endblock %}

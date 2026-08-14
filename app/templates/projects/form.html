@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Project{% endblock %}
+{% block page_title %}Projects{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ '✏️ Edit' if action == 'Edit' else '+ New' }} Project</h1>
+    <p class="subtitle">{{ 'Update project details' if action == 'Edit' else 'Document a new project' }}</p>
+  </div>
+  <a href="{{ url_for('projects.index') }}" class="btn btn-outline">← Back</a>
+</div>
+
+<div class="card" style="max-width:760px;">
+  <form method="POST">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="title">Project Title *</label>
+        <input class="form-control" type="text" id="title" name="title"
+               value="{{ item.title if item else '' }}" required placeholder="Project name">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="domain">Domain</label>
+        <select class="form-control" id="domain" name="domain">
+          {% for d in domains %}
+            <option value="{{ d }}" {% if item and item.domain == d %}selected{% endif %}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="sub_category">Sub-category</label>
+        <input class="form-control" type="text" id="sub_category" name="sub_category"
+               value="{{ item.sub_category or '' if item else '' }}" placeholder="e.g. NLP, Brand Strategy">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="status">Status</label>
+        <select class="form-control" id="status" name="status">
+          {% for s in statuses %}
+            <option value="{{ s }}" {% if item and item.status == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="github_link">GitHub Link</label>
+        <input class="form-control" type="url" id="github_link" name="github_link"
+               value="{{ item.github_link or '' if item else '' }}" placeholder="https://github.com/...">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="demo_link">Demo Link</label>
+        <input class="form-control" type="url" id="demo_link" name="demo_link"
+               value="{{ item.demo_link or '' if item else '' }}" placeholder="https://...">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="description">Description</label>
+      <textarea class="form-control" id="description" name="description"
+                placeholder="What does this project do?">{{ item.description or '' if item else '' }}</textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="skills_used">Skills Used</label>
+      <input class="form-control" type="text" id="skills_used" name="skills_used"
+             value="{{ item.skills_used or '' if item else '' }}" placeholder="Python, React, SQL...">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="priority">Priority</label>
+        <select class="form-control" id="priority" name="priority">
+          {% for p in priorities %}
+            <option value="{{ p }}" {% if item and item.priority == p %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="date_started">Date Started</label>
+        <input class="form-control" type="date" id="date_started" name="date_started"
+               value="{{ item.date_started.strftime('%Y-%m-%d') if item and item.date_started else '' }}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="date_completed">Date Completed</label>
+      <input class="form-control" type="date" id="date_completed" name="date_completed"
+             value="{{ item.date_completed.strftime('%Y-%m-%d') if item and item.date_completed else '' }}">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="notes">Notes</label>
+      <textarea class="form-control" id="notes" name="notes"
+                placeholder="Additional notes...">{{ item.notes or '' if item else '' }}</textarea>
+    </div>
+    <div class="flex gap-2 flex-wrap mb-3">
+      <label class="form-check">
+        <input type="checkbox" name="is_pinned" {% if item and item.is_pinned %}checked{% endif %}>
+        📌 Pin this
+      </label>
+      <label class="form-check">
+        <input type="checkbox" name="is_starred" {% if item and item.is_starred %}checked{% endif %}>
+        ⭐ Star this
+      </label>
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary">{{ 'Save Changes' if action == 'Edit' else 'Create Project' }} 🚀</button>
+      <a href="{{ url_for('projects.index') }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Projects{% endblock %}
+{% block page_title %}Projects{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>🚀 Projects</h1>
+    <p class="subtitle">Document and showcase your work</p>
+  </div>
+  <a href="{{ url_for('projects.new') }}" class="btn btn-primary">+ New Project</a>
+</div>
+
+<div class="filter-bar">
+  <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;">
+    <select name="domain" onchange="this.form.submit()">
+      <option value="">All Domains</option>
+      {% for d in domains %}
+        <option value="{{ d }}" {% if domain_filter == d %}selected{% endif %}>{{ d }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" onchange="this.form.submit()">
+      <option value="">All Statuses</option>
+      {% for s in statuses %}
+        <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    {% if domain_filter or status_filter %}
+      <a href="{{ url_for('projects.index') }}" class="btn btn-outline btn-sm">✕ Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if items %}
+<div class="grid-3">
+  {% for item in items %}
+  <div class="card">
+    <div class="flex-between mb-2">
+      <span class="badge badge-purple">{{ item.domain or 'Personal' }}</span>
+      <div class="flex gap-2">
+        {% if item.is_pinned %}<span title="Pinned" class="text-muted">📌</span>{% endif %}
+        {% if item.is_starred %}<span title="Starred" class="text-muted">⭐</span>{% endif %}
+      </div>
+    </div>
+    <div class="card-title">{{ item.title }}</div>
+    {% if item.sub_category %}<div class="text-muted fs-sm mb-1">{{ item.sub_category }}</div>{% endif %}
+    <div class="flex gap-2 mt-1 mb-2 flex-wrap">
+      {% if item.status == 'Completed' %}<span class="badge badge-green">{{ item.status }}</span>
+      {% elif item.status == 'In Progress' %}<span class="badge badge-blue">{{ item.status }}</span>
+      {% elif item.status == 'Planning' %}<span class="badge badge-purple">{{ item.status }}</span>
+      {% else %}<span class="badge badge-muted">{{ item.status }}</span>{% endif %}
+      {% if item.priority == 'High' %}<span class="badge badge-pink">High</span>{% endif %}
+    </div>
+    {% if item.description %}
+      <p class="text-muted fs-sm">{{ item.description[:90] }}{% if item.description|length > 90 %}…{% endif %}</p>
+    {% endif %}
+    {% if item.skills_used %}
+      <div class="text-muted fs-sm mt-1">🛠️ {{ item.skills_used }}</div>
+    {% endif %}
+    <div class="flex gap-2 mt-2 flex-wrap">
+      {% if item.github_link %}
+        <a href="{{ item.github_link }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">GitHub</a>
+      {% endif %}
+      {% if item.demo_link %}
+        <a href="{{ item.demo_link }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">Demo</a>
+      {% endif %}
+      <a href="{{ url_for('projects.edit', project_id=item.id) }}" class="btn btn-outline btn-sm">Edit</a>
+      <form method="POST" action="{{ url_for('projects.delete', project_id=item.id) }}"
+            onsubmit="return confirm('Delete this project?')">
+        <button type="submit" class="btn btn-danger btn-sm">✕</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">🚀</div>
+  <h3>No projects yet</h3>
+  <p>Document your projects to build a strong portfolio.</p>
+  <a href="{{ url_for('projects.new') }}" class="btn btn-primary mt-3">+ New Project</a>
+</div>
+{% endif %}
+{% endblock %}

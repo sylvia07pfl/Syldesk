@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Backup Plan{% endblock %}
+{% block page_title %}Backup Plan{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>🛡️ Backup Plan</h1>
+    <p class="subtitle">Track alternative career paths, exams, and certifications</p>
+  </div>
+  <a href="{{ url_for('backup.new') }}" class="btn btn-primary">+ Add Plan</a>
+</div>
+
+<div class="filter-bar">
+  <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;">
+    <select name="category" onchange="this.form.submit()">
+      <option value="">All Categories</option>
+      {% for c in categories %}
+        <option value="{{ c }}" {% if category_filter == c %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" onchange="this.form.submit()">
+      <option value="">All Statuses</option>
+      {% for s in statuses %}
+        <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    {% if category_filter or status_filter %}
+      <a href="{{ url_for('backup.index') }}" class="btn btn-outline btn-sm">✕ Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if items %}
+<div class="grid-3">
+  {% for item in items %}
+  <div class="card">
+    <div class="flex-between mb-2">
+      <span class="badge badge-yellow">{{ item.category or 'Other' }}</span>
+      <div class="flex gap-2">
+        <a href="{{ url_for('backup.edit', plan_id=item.id) }}" class="btn btn-outline btn-sm">Edit</a>
+        <form method="POST" action="{{ url_for('backup.delete', plan_id=item.id) }}"
+              onsubmit="return confirm('Delete this plan?')">
+          <button type="submit" class="btn btn-danger btn-sm">✕</button>
+        </form>
+      </div>
+    </div>
+    <div class="card-title">{{ item.title }}</div>
+    <div class="flex gap-2 mt-1 flex-wrap">
+      {% if item.status == 'Completed' %}<span class="badge badge-green">{{ item.status }}</span>
+      {% elif item.status == 'In Progress' %}<span class="badge badge-blue">{{ item.status }}</span>
+      {% else %}<span class="badge badge-muted">{{ item.status }}</span>{% endif %}
+      {% if item.priority == 'High' %}<span class="badge badge-pink">High</span>
+      {% elif item.priority == 'Medium' %}<span class="badge badge-yellow">Med</span>
+      {% else %}<span class="badge badge-muted">Low</span>{% endif %}
+    </div>
+    {% if item.deadline %}<div class="text-muted fs-sm mt-2">⏰ {{ item.deadline.strftime('%b %d, %Y') }}</div>{% endif %}
+    {% if item.description %}
+      <div class="text-muted fs-sm mt-1">{{ item.description[:80] }}{% if item.description|length > 80 %}…{% endif %}</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">🛡️</div>
+  <h3>No backup plans yet</h3>
+  <p>Add government exams, certifications, or skill courses as backup options.</p>
+  <a href="{{ url_for('backup.new') }}" class="btn btn-primary mt-3">+ Add Plan</a>
+</div>
+{% endif %}
+{% endblock %}

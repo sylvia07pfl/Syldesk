@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Backup Plan{% endblock %}
+{% block page_title %}Backup Plan{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ '✏️ Edit' if action == 'Edit' else '+ New' }} Backup Plan</h1>
+    <p class="subtitle">Track an alternative career path or exam</p>
+  </div>
+  <a href="{{ url_for('backup.index') }}" class="btn btn-outline">← Back</a>
+</div>
+
+<div class="card" style="max-width:640px;">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label" for="title">Title *</label>
+      <input class="form-control" type="text" id="title" name="title"
+             value="{{ item.title if item else '' }}" required placeholder="e.g. SSC CGL 2025">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="category">Category</label>
+        <select class="form-control" id="category" name="category">
+          {% for c in categories %}
+            <option value="{{ c }}" {% if item and item.category == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="priority">Priority</label>
+        <select class="form-control" id="priority" name="priority">
+          {% for p in priorities %}
+            <option value="{{ p }}" {% if item and item.priority == p %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="status">Status</label>
+        <select class="form-control" id="status" name="status">
+          {% for s in statuses %}
+            <option value="{{ s }}" {% if item and item.status == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="deadline">Deadline / Exam Date</label>
+        <input class="form-control" type="date" id="deadline" name="deadline"
+               value="{{ item.deadline.strftime('%Y-%m-%d') if item and item.deadline else '' }}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="description">Description</label>
+      <textarea class="form-control" id="description" name="description"
+                placeholder="Details about this plan...">{{ item.description or '' if item else '' }}</textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="notes">Notes</label>
+      <textarea class="form-control" id="notes" name="notes"
+                placeholder="Study strategy, resources, etc.">{{ item.notes or '' if item else '' }}</textarea>
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary">{{ 'Save Changes' if action == 'Edit' else 'Add Plan' }} 🛡️</button>
+      <a href="{{ url_for('backup.index') }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

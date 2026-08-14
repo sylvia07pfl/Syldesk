@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}{{ roadmap.title if roadmap else 'New Roadmap' }}{% endblock %}
+{% block page_title %}Skills{% endblock %}
+
+{% block content %}
+{% if roadmap %}
+<div class="page-header">
+  <div>
+    <h1>📚 {{ roadmap.title }}</h1>
+    <p class="subtitle">Target: {{ roadmap.target_role or 'General' }} · Progress: {{ roadmap.progress_percent }}%</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{{ url_for('skills.edit', roadmap_id=roadmap.id) }}" class="btn btn-outline btn-sm">Edit Roadmap</a>
+    <a href="{{ url_for('skills.index') }}" class="btn btn-outline">← Back</a>
+  </div>
+</div>
+
+<!-- Overall progress -->
+<div class="card mb-4">
+  <div class="flex-between mb-2">
+    <span class="card-title">Overall Progress</span>
+    <span class="fw-700 text-accent">{{ roadmap.progress_percent }}%</span>
+  </div>
+  <div class="progress">
+    <div class="progress-bar blue" style="width: {{ roadmap.progress_percent }}%"></div>
+  </div>
+</div>
+
+<!-- Skill Items -->
+<div class="grid-2">
+  <div>
+    <div class="flex-between mb-3">
+      <h3 class="fw-700">Skills ({{ skill_items|length }})</h3>
+    </div>
+    {% if skill_items %}
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        {% for s in skill_items %}
+        <div class="card" style="padding:14px 16px;">
+          <div class="flex-between mb-1">
+            <span class="fw-700 fs-sm">{{ s.skill_name }}</span>
+            <div class="flex gap-2 align-items-center">
+              {% if s.is_completed %}<span class="badge badge-green">✓ Done</span>{% endif %}
+              <form method="POST" action="{{ url_for('skills.delete_skill', roadmap_id=roadmap.id, skill_id=s.id) }}"
+                    onsubmit="return confirm('Remove this skill?')">
+                <button type="submit" class="btn btn-danger btn-sm">✕</button>
+              </form>
+            </div>
+          </div>
+          <div class="flex-between mb-1">
+            <span class="text-muted fs-sm">{{ s.progress_percent }}%</span>
+            {% if s.last_studied %}<span class="text-muted fs-sm">Last studied: {{ s.last_studied.strftime('%b %d') }}</span>{% endif %}
+          </div>
+          <div class="progress" style="height:6px;">
+            <div class="progress-bar" style="width: {{ s.progress_percent }}%"></div>
+          </div>
+          {% if s.resources %}<div class="text-muted fs-sm mt-1">📎 {{ s.resources }}</div>{% endif %}
+          {% if s.notes %}<div class="text-muted fs-sm mt-1">{{ s.notes }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state" style="padding:24px 0;">
+        <p>No skills added yet. Add your first skill below.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Add skill form -->
+  <div>
+    <h3 class="fw-700 mb-3">+ Add Skill</h3>
+    <div class="card">
+      <form method="POST" action="{{ url_for('skills.add_skill', roadmap_id=roadmap.id) }}">
+        <div class="form-group">
+          <label class="form-label" for="skill_name">Skill Name *</label>
+          <input class="form-control" type="text" id="skill_name" name="skill_name" required placeholder="e.g. Python, SQL">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="resources">Resources</label>
+          <input class="form-control" type="text" id="resources" name="resources" placeholder="Link, book, course...">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="progress_percent">Progress %</label>
+            <input class="form-control" type="number" id="progress_percent" name="progress_percent"
+                   min="0" max="100" value="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="last_studied">Last Studied</label>
+            <input class="form-control" type="date" id="last_studied" name="last_studied">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="notes">Notes</label>
+          <textarea class="form-control" id="notes" name="notes" style="min-height:60px;" placeholder="Notes..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary w-full">Add Skill 📚</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% else %}
+<!-- NEW ROADMAP FORM -->
+<div class="page-header">
+  <div>
+    <h1>+ New Skill Roadmap</h1>
+    <p class="subtitle">Define your learning path for a target role</p>
+  </div>
+  <a href="{{ url_for('skills.index') }}" class="btn btn-outline">← Back</a>
+</div>
+<div class="card" style="max-width:600px;">
+  <form method="POST" action="{{ url_for('skills.new') }}">
+    <div class="form-group">
+      <label class="form-label" for="title">Roadmap Title *</label>
+      <input class="form-control" type="text" id="title" name="title" required placeholder="e.g. Data Analyst Skills">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="target_role">Target Role</label>
+      <input class="form-control" type="text" id="target_role" name="target_role" placeholder="e.g. Marketing Manager">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="notes">Notes</label>
+      <textarea class="form-control" id="notes" name="notes" placeholder="Your roadmap goal..."></textarea>
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary">Create Roadmap 📚</button>
+      <a href="{{ url_for('skills.index') }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

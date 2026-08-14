@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Opportunity{% endblock %}
+{% block page_title %}{{ action }} Opportunity{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ '✏️ Edit' if action == 'Edit' else '+ New' }} Opportunity</h1>
+    <p class="subtitle">{{ 'Update opportunity details' if action == 'Edit' else 'Save a new opportunity to track' }}</p>
+  </div>
+  <a href="{{ url_for('opportunities.index') }}" class="btn btn-outline">← Back</a>
+</div>
+
+<div class="card" style="max-width:700px;">
+  <form method="POST">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="title">Title *</label>
+        <input class="form-control" type="text" id="title" name="title"
+               value="{{ item.title if item else '' }}" required placeholder="Role or opportunity name">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="company">Company / Organisation</label>
+        <input class="form-control" type="text" id="company" name="company"
+               value="{{ item.company or '' if item else '' }}" placeholder="Company name">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="link">Link / URL</label>
+      <input class="form-control" type="url" id="link" name="link"
+             value="{{ item.link or '' if item else '' }}" placeholder="https://...">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="category">Category</label>
+        <select class="form-control" id="category" name="category">
+          {% for c in categories %}
+            <option value="{{ c }}" {% if item and item.category == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="source">Source</label>
+        <input class="form-control" type="text" id="source" name="source"
+               value="{{ item.source or '' if item else '' }}" placeholder="LinkedIn, Internshala...">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="priority">Priority</label>
+        <select class="form-control" id="priority" name="priority">
+          {% for p in priorities %}
+            <option value="{{ p }}" {% if item and item.priority == p %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="status">Status</label>
+        <select class="form-control" id="status" name="status">
+          {% for s in statuses %}
+            <option value="{{ s }}" {% if item and item.status == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="deadline">Deadline</label>
+        <input class="form-control" type="date" id="deadline" name="deadline"
+               value="{{ item.deadline.strftime('%Y-%m-%d') if item and item.deadline else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="applied_date">Applied Date</label>
+        <input class="form-control" type="date" id="applied_date" name="applied_date"
+               value="{{ item.applied_date.strftime('%Y-%m-%d') if item and item.applied_date else '' }}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="notes">Notes</label>
+      <textarea class="form-control" id="notes" name="notes" placeholder="Any notes about this opportunity...">{{ item.notes or '' if item else '' }}</textarea>
+    </div>
+    <div class="flex gap-2 flex-wrap mb-3">
+      <label class="form-check">
+        <input type="checkbox" name="is_pinned" {% if item and item.is_pinned %}checked{% endif %}>
+        📌 Pin this
+      </label>
+      <label class="form-check">
+        <input type="checkbox" name="is_starred" {% if item and item.is_starred %}checked{% endif %}>
+        ⭐ Star this
+      </label>
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary">{{ 'Save Changes' if action == 'Edit' else 'Save Opportunity' }} 🌸</button>
+      <a href="{{ url_for('opportunities.index') }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

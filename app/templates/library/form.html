@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Material{% endblock %}
+{% block page_title %}Library{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ '✏️ Edit' if action == 'Edit' else '+ Add' }} Study Material</h1>
+    <p class="subtitle">Add a resource to your study library</p>
+  </div>
+  <a href="{{ url_for('library.index') }}" class="btn btn-outline">← Back</a>
+</div>
+
+<div class="card" style="max-width:640px;">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label" for="title">Title *</label>
+      <input class="form-control" type="text" id="title" name="title"
+             value="{{ item.title if item else '' }}" required placeholder="Resource title">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="category">Category</label>
+        <select class="form-control" id="category" name="category">
+          <option value="">— Select —</option>
+          {% for c in categories %}
+            <option value="{{ c }}" {% if item and item.category == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="material_type">Type</label>
+        <select class="form-control" id="material_type" name="material_type">
+          <option value="">— Select —</option>
+          {% for t in material_types %}
+            <option value="{{ t }}" {% if item and item.material_type == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="link">Link / URL</label>
+      <input class="form-control" type="url" id="link" name="link"
+             value="{{ item.link or '' if item else '' }}" placeholder="https://...">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="tags">Tags</label>
+      <input class="form-control" type="text" id="tags" name="tags"
+             value="{{ item.tags or '' if item else '' }}" placeholder="comma, separated, tags">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="notes">Notes</label>
+      <textarea class="form-control" id="notes" name="notes"
+                placeholder="Your notes about this resource...">{{ item.notes or '' if item else '' }}</textarea>
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary">{{ 'Save Changes' if action == 'Edit' else 'Add to Library' }} 📖</button>
+      <a href="{{ url_for('library.index') }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

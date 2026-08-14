@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Inspiration{% endblock %}
+{% block page_title %}Inspiration{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>✨ Inspiration Board</h1>
+    <p class="subtitle">Save links, content, and ideas that inspire your career</p>
+  </div>
+  <a href="{{ url_for('inspiration.new') }}" class="btn btn-primary">+ Add Inspiration</a>
+</div>
+
+<div class="filter-bar">
+  <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;">
+    <select name="platform" onchange="this.form.submit()">
+      <option value="">All Platforms</option>
+      {% for p in platforms %}
+        <option value="{{ p }}" {% if platform_filter == p %}selected{% endif %}>{{ p }}</option>
+      {% endfor %}
+    </select>
+    {% if platform_filter %}
+      <a href="{{ url_for('inspiration.index') }}" class="btn btn-outline btn-sm">✕ Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if items %}
+<div class="grid-3">
+  {% for item in items %}
+  <div class="card">
+    <div class="flex-between mb-2">
+      <span class="badge badge-purple">{{ item.platform }}</span>
+      <div class="flex gap-2">
+        <a href="{{ url_for('inspiration.edit', item_id=item.id) }}" class="btn btn-outline btn-sm">Edit</a>
+        <form method="POST" action="{{ url_for('inspiration.delete', item_id=item.id) }}"
+              onsubmit="return confirm('Delete this item?')">
+          <button type="submit" class="btn btn-danger btn-sm">✕</button>
+        </form>
+      </div>
+    </div>
+    {% if item.category %}<div class="text-muted fs-sm mb-1">{{ item.category }}</div>{% endif %}
+    {% if item.link %}
+      <a href="{{ item.link }}" target="_blank" rel="noopener"
+         class="fs-sm" style="word-break:break-all;display:block;margin-bottom:8px;">↗ {{ item.link[:60] }}{% if item.link|length > 60 %}…{% endif %}</a>
+    {% endif %}
+    {% if item.why_saved %}
+      <div class="fs-sm mb-1"><span class="fw-700 text-muted">Why saved:</span> {{ item.why_saved }}</div>
+    {% endif %}
+    {% if item.what_learned %}
+      <div class="fs-sm mb-1"><span class="fw-700 text-muted">Learned:</span> {{ item.what_learned }}</div>
+    {% endif %}
+    {% if item.action_to_take %}
+      <div class="fs-sm"><span class="fw-700 text-muted">Action:</span> {{ item.action_to_take }}</div>
+    {% endif %}
+    <div class="text-muted fs-sm mt-2">{{ item.created_at.strftime('%b %d, %Y') }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">✨</div>
+  <h3>No inspiration saved yet</h3>
+  <p>Save links, content, and ideas that spark your career growth.</p>
+  <a href="{{ url_for('inspiration.new') }}" class="btn btn-primary mt-3">+ Add Inspiration</a>
+</div>
+{% endif %}
+{% endblock %}

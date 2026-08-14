@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Hello, {{ current_user.name.split(' ')[0] }} 🌸</h1>
+    <p class="subtitle">Here's your career overview for {{ today.strftime('%A, %B %d') }}</p>
+  </div>
+  <div class="flex gap-2 flex-wrap">
+    <a href="{{ url_for('opportunities.new') }}" class="btn btn-primary btn-sm">+ Opportunity</a>
+    <a href="{{ url_for('projects.new') }}" class="btn btn-outline btn-sm">+ Project</a>
+  </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon">💼</div>
+    <div class="stat-value">{{ total_opportunities }}</div>
+    <div class="stat-label">Opportunities</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📋</div>
+    <div class="stat-value">{{ active_applications }}</div>
+    <div class="stat-label">Active Applications</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🚀</div>
+    <div class="stat-value">{{ total_projects }}</div>
+    <div class="stat-label">Projects</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📚</div>
+    <div class="stat-value">{{ total_roadmaps }}</div>
+    <div class="stat-label">Skill Roadmaps</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📈</div>
+    <div class="stat-value">{{ avg_skill_progress }}%</div>
+    <div class="stat-label">Avg. Skill Progress</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🛡️</div>
+    <div class="stat-value">{{ active_backup }}</div>
+    <div class="stat-label">Backup Plans Active</div>
+  </div>
+</div>
+
+<!-- SKILL PROGRESS BAR -->
+{% if total_roadmaps > 0 %}
+<div class="card mb-4">
+  <div class="flex-between mb-2">
+    <span class="card-title">Overall Skill Progress</span>
+    <span class="text-muted fs-sm">{{ avg_skill_progress }}%</span>
+  </div>
+  <div class="progress">
+    <div class="progress-bar green" style="width: {{ avg_skill_progress }}%"></div>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-2 mb-4">
+  <!-- UPCOMING DEADLINES -->
+  <div class="card">
+    <div class="flex-between mb-3">
+      <div class="card-title">⏰ Upcoming Deadlines <span class="text-muted fs-sm">(next 7 days)</span></div>
+    </div>
+    {% if upcoming_opps or upcoming_apps %}
+      <ul style="display:flex;flex-direction:column;gap:10px;">
+        {% for opp in upcoming_opps %}
+        <li style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div>
+            <span class="fw-700 fs-sm">{{ opp.title }}</span>
+            {% if opp.company %}<span class="text-muted fs-sm"> @ {{ opp.company }}</span>{% endif %}
+            <div class="text-muted fs-sm">Opportunity · {{ opp.deadline.strftime('%b %d') }}</div>
+          </div>
+          <span class="badge badge-pink">{{ (opp.deadline - today).days }}d</span>
+        </li>
+        {% endfor %}
+        {% for app in upcoming_apps %}
+        <li style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div>
+            <span class="fw-700 fs-sm">{{ app.company }}</span>
+            {% if app.role %}<span class="text-muted fs-sm"> — {{ app.role }}</span>{% endif %}
+            <div class="text-muted fs-sm">Application · {{ app.deadline.strftime('%b %d') }}</div>
+          </div>
+          <span class="badge badge-purple">{{ (app.deadline - today).days }}d</span>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state" style="padding:20px 0;">
+        <div class="empty-icon">🎉</div>
+        <p>No deadlines in the next 7 days!</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- PINNED OPPORTUNITIES -->
+  <div class="card">
+    <div class="flex-between mb-3">
+      <div class="card-title">📌 Pinned Opportunities</div>
+      <a href="{{ url_for('opportunities.index') }}" class="btn btn-outline btn-sm">View all</a>
+    </div>
+    {% if pinned_opps %}
+      <ul style="display:flex;flex-direction:column;gap:10px;">
+        {% for opp in pinned_opps %}
+        <li>
+          <div class="flex-between">
+            <span class="fw-700 fs-sm">{{ opp.title }}</span>
+            {% if opp.status == 'Saved' %}<span class="badge badge-muted">{{ opp.status }}</span>
+            {% elif opp.status == 'Applied' %}<span class="badge badge-blue">{{ opp.status }}</span>
+            {% elif opp.status == 'Shortlisted' %}<span class="badge badge-green">{{ opp.status }}</span>
+            {% else %}<span class="badge badge-red">{{ opp.status }}</span>{% endif %}
+          </div>
+          {% if opp.company %}<div class="text-muted fs-sm">{{ opp.company }}{% if opp.deadline %} · {{ opp.deadline.strftime('%b %d') }}{% endif %}</div>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state" style="padding:20px 0;">
+        <p>Pin opportunities to see them here.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- RECENT OPPORTUNITIES -->
+  <div class="card">
+    <div class="flex-between mb-3">
+      <div class="card-title">💼 Recent Opportunities</div>
+      <a href="{{ url_for('opportunities.new') }}" class="btn btn-primary btn-sm">+ Add</a>
+    </div>
+    {% if recent_opps %}
+      <ul style="display:flex;flex-direction:column;gap:8px;">
+        {% for opp in recent_opps %}
+        <li class="flex-between">
+          <div>
+            <div class="fw-700 fs-sm">{{ opp.title }}</div>
+            <div class="text-muted fs-sm">{{ opp.category }} · {{ opp.created_at.strftime('%b %d') }}</div>
+          </div>
+          {% if opp.priority == 'High' %}<span class="badge badge-pink">High</span>
+          {% elif opp.priority == 'Medium' %}<span class="badge badge-yellow">Med</span>
+          {% else %}<span class="badge badge-muted">Low</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state" style="padding:16px 0;">
+        <p>No opportunities yet. <a href="{{ url_for('opportunities.new') }}">Add one!</a></p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- RECENT PROJECTS -->
+  <div class="card">
+    <div class="flex-between mb-3">
+      <div class="card-title">🚀 Recent Projects</div>
+      <a href="{{ url_for('projects.new') }}" class="btn btn-primary btn-sm">+ Add</a>
+    </div>
+    {% if recent_projects %}
+      <ul style="display:flex;flex-direction:column;gap:8px;">
+        {% for proj in recent_projects %}
+        <li class="flex-between">
+          <div>
+            <div class="fw-700 fs-sm">{{ proj.title }}</div>
+            <div class="text-muted fs-sm">{{ proj.domain }} · {{ proj.created_at.strftime('%b %d') }}</div>
+          </div>
+          {% if proj.status == 'Completed' %}<span class="badge badge-green">Done</span>
+          {% elif proj.status == 'In Progress' %}<span class="badge badge-blue">Active</span>
+          {% elif proj.status == 'Planning' %}<span class="badge badge-purple">Planning</span>
+          {% else %}<span class="badge badge-muted">On Hold</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state" style="padding:16px 0;">
+        <p>No projects yet. <a href="{{ url_for('projects.new') }}">Start one!</a></p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- QUICK NAV -->
+<div class="card mt-3">
+  <div class="card-title mb-3">⚡ Quick Navigation</div>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;">
+    <a href="{{ url_for('opportunities.index') }}" class="btn btn-outline btn-sm">💼 Opportunities</a>
+    <a href="{{ url_for('applications.index') }}" class="btn btn-outline btn-sm">📋 Applications</a>
+    <a href="{{ url_for('profiles.index') }}" class="btn btn-outline btn-sm">👤 Profiles</a>
+    <a href="{{ url_for('skills.index') }}" class="btn btn-outline btn-sm">📚 Skills</a>
+    <a href="{{ url_for('projects.index') }}" class="btn btn-outline btn-sm">🚀 Projects</a>
+    <a href="{{ url_for('library.index') }}" class="btn btn-outline btn-sm">📖 Library</a>
+    <a href="{{ url_for('inspiration.index') }}" class="btn btn-outline btn-sm">✨ Inspiration</a>
+    <a href="{{ url_for('backup.index') }}" class="btn btn-outline btn-sm">🛡️ Backup Plan</a>
+  </div>
+</div>
+{% endblock %}

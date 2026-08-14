@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Skills{% endblock %}
+{% block page_title %}Skills{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>📚 Skill Roadmaps</h1>
+    <p class="subtitle">Build structured learning plans for every role you're targeting</p>
+  </div>
+  <a href="{{ url_for('skills.new') }}" class="btn btn-primary">+ New Roadmap</a>
+</div>
+
+{% if roadmaps %}
+<div class="grid-3">
+  {% for roadmap in roadmaps %}
+  <div class="card">
+    <div class="flex-between mb-2">
+      <span class="badge badge-blue">{{ roadmap.target_role or 'General' }}</span>
+      <div class="flex gap-2">
+        <a href="{{ url_for('skills.detail', roadmap_id=roadmap.id) }}" class="btn btn-outline btn-sm">View</a>
+        <form method="POST" action="{{ url_for('skills.delete', roadmap_id=roadmap.id) }}"
+              onsubmit="return confirm('Delete this roadmap?')">
+          <button type="submit" class="btn btn-danger btn-sm">✕</button>
+        </form>
+      </div>
+    </div>
+    <div class="card-title">{{ roadmap.title }}</div>
+    <div class="flex-between mt-2 mb-1">
+      <span class="text-muted fs-sm">Progress</span>
+      <span class="fw-700 fs-sm">{{ roadmap.progress_percent }}%</span>
+    </div>
+    <div class="progress">
+      <div class="progress-bar blue" style="width: {{ roadmap.progress_percent }}%"></div>
+    </div>
+    {% if roadmap.notes %}
+      <div class="text-muted fs-sm mt-2">{{ roadmap.notes[:80] }}{% if roadmap.notes|length > 80 %}…{% endif %}</div>
+    {% endif %}
+    <div class="text-muted fs-sm mt-2">Created {{ roadmap.created_at.strftime('%b %d, %Y') }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">📚</div>
+  <h3>No skill roadmaps yet</h3>
+  <p>Create your first skill roadmap to start tracking learning progress.</p>
+  <a href="{{ url_for('skills.new') }}" class="btn btn-primary mt-3">+ Create Roadmap</a>
+</div>
+{% endif %}
+{% endblock %}
