@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Agent Feed{% endblock %}
+{% block page_title %}Agent Feed{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>🤖 Agent Activity Feed</h1>
+    <p class="subtitle">Everything the AI agent has processed and auto-routed</p>
+  </div>
+  <a href="{{ url_for('inspiration.index') }}" class="btn btn-outline">← Inspiration</a>
+</div>
+
+<div class="grid-2">
+  <!-- Auto-routed -->
+  <div>
+    <div style="font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;
+                color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);">
+      🎯 Auto-Routed Items ({{ routed|length }})
+    </div>
+    {% if routed %}
+      {% for item in routed %}
+      <div class="card mb-2" style="padding:14px 16px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:.88rem;">{{ item.title or item.link[:55] }}</div>
+            <div style="font-size:.78rem;color:var(--muted);margin-top:3px;">
+              {{ item.category }} → <strong>{{ item.auto_route_target }}</strong>
+              · {{ item.created_at.strftime('%b %d') }}
+            </div>
+          </div>
+          <span class="badge badge-blue">→ {{ item.auto_route_target }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state" style="padding:32px;">
+        <div class="empty-icon">🤖</div>
+        <p>No auto-routed items yet. Save an internship or course link to see auto-routing in action.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Recently AI-analyzed -->
+  <div>
+    <div style="font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;
+                color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);">
+      ✨ Recently AI-Analyzed ({{ recent_ai|length }})
+    </div>
+    {% if recent_ai %}
+      {% for item in recent_ai %}
+      <div class="card mb-2" style="padding:14px 16px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:.88rem;">{{ item.title or item.link[:55] }}</div>
+            <div style="font-size:.78rem;color:var(--muted);margin-top:3px;">
+              {{ item.platform }} · {{ item.category }}
+              {% if item.confidence_score %} · {{ (item.confidence_score * 100)|int }}% conf.{% endif %}
+            </div>
+          </div>
+          <span class="badge badge-purple">✨ AI</span>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state" style="padding:32px;">
+        <div class="empty-icon">✨</div>
+        <p>Save a link and click Analyze to see AI-analyzed items here.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

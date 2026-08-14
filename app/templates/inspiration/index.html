@@ -2,67 +2,222 @@
 {% block title %}Inspiration{% endblock %}
 {% block page_title %}Inspiration{% endblock %}
 
+{% block extra_css %}
+.insp-header-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+}
+.smart-collections {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
+}
+.collection-chip {
+  padding: 5px 14px; border-radius: 20px; font-size: .8rem; font-weight: 700;
+  border: 1.5px solid var(--border); background: white; color: var(--muted);
+  cursor: pointer; text-decoration: none; transition: all .15s;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.collection-chip:hover, .collection-chip.active {
+  background: var(--surface); border-color: var(--accent); color: var(--accent2);
+}
+.collection-chip .chip-count {
+  background: var(--accent); color: white; font-size: .68rem; font-weight: 800;
+  border-radius: 99px; padding: 1px 6px; min-width: 18px; text-align: center;
+}
+.insp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.insp-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-card); padding: 18px 20px;
+  box-shadow: var(--shadow); transition: all .2s;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.insp-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+.insp-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.insp-card-title { font-size: .93rem; font-weight: 800; color: var(--text); line-height: 1.3; flex: 1; }
+.insp-card-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.insp-card-summary { font-size: .82rem; color: var(--muted); line-height: 1.5; }
+.insp-card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag-mini {
+  font-size: .7rem; font-weight: 600; padding: 1px 7px;
+  border-radius: 20px; background: var(--surface); color: var(--muted);
+  border: 1px solid var(--border);
+}
+.insp-card-meta { font-size: .75rem; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+.insp-card-actions { display: flex; gap: 6px; margin-top: auto; }
+.urgency-high  { border-left: 3px solid var(--danger) !important; }
+.urgency-medium { border-left: 3px solid var(--warning) !important; }
+.ai-badge {
+  font-size: .68rem; padding: 1px 7px; border-radius: 20px;
+  background: rgba(200,180,216,.25); color: #7a5a9a; font-weight: 700; border: 1px solid var(--lavender);
+}
+.filter-search-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.filter-search-row input, .filter-search-row select {
+  padding: 8px 12px; border: 1.5px solid var(--border);
+  border-radius: var(--radius-input); font-family: inherit;
+  font-size: .85rem; color: var(--text); background: white; outline: none;
+}
+.filter-search-row input { flex: 1; min-width: 180px; }
+.filter-search-row input:focus, .filter-search-row select:focus { border-color: var(--accent); }
+{% endblock %}
+
 {% block content %}
-<div class="page-header">
+<div class="insp-header-bar">
   <div>
-    <h1>✨ Inspiration Board</h1>
-    <p class="subtitle">Save links, content, and ideas that inspire your career</p>
+    <h1 style="font-size:1.5rem;font-weight:800;">✨ Inspiration</h1>
+    <p style="font-size:.87rem;color:var(--muted);margin-top:2px;">
+      {{ total }} saved items · {{ ai_analyzed }} AI-analyzed · {{ actionable }} actionable
+    </p>
   </div>
-  <a href="{{ url_for('inspiration.new') }}" class="btn btn-primary">+ Add Inspiration</a>
+  <div style="display:flex;gap:8px;">
+    <a href="{{ url_for('inspiration.inbox') }}" class="btn btn-outline btn-sm">🧠 AI Inbox</a>
+    <a href="{{ url_for('inspiration.agent_feed') }}" class="btn btn-outline btn-sm">🤖 Agent Feed</a>
+    <a href="{{ url_for('inspiration.new') }}" class="btn btn-primary">+ Quick Capture</a>
+  </div>
 </div>
 
-<div class="filter-bar">
-  <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;">
-    <select name="platform" onchange="this.form.submit()">
+<!-- Smart Collections -->
+<div class="smart-collections">
+  <a href="{{ url_for('inspiration.index') }}"
+     class="collection-chip {% if not category_filter and not urgency_filter %}active{% endif %}">
+    All <span class="chip-count">{{ total }}</span>
+  </a>
+  <a href="{{ url_for('inspiration.inbox') }}" class="collection-chip">
+    🔥 AI Inbox <span class="chip-count">{{ high_urgency }}</span>
+  </a>
+  <a href="{{ url_for('inspiration.index', urgency='High') }}"
+     class="collection-chip {% if urgency_filter == 'High' %}active{% endif %}">
+    🎯 High Urgency <span class="chip-count">{{ high_urgency }}</span>
+  </a>
+  <a href="{{ url_for('inspiration.index', category='Internship') }}"
+     class="collection-chip {% if category_filter == 'Internship' %}active{% endif %}">
+    💼 Internships
+  </a>
+  <a href="{{ url_for('inspiration.index', category='Course') }}"
+     class="collection-chip {% if category_filter == 'Course' %}active{% endif %}">
+    📚 Courses
+  </a>
+  <a href="{{ url_for('inspiration.index', category='Job Opportunity') }}"
+     class="collection-chip {% if category_filter == 'Job Opportunity' %}active{% endif %}">
+    🏢 Jobs
+  </a>
+  <a href="{{ url_for('inspiration.index', platform='Instagram') }}"
+     class="collection-chip {% if platform_filter == 'Instagram' %}active{% endif %}">
+    📸 Instagram
+  </a>
+  <a href="{{ url_for('inspiration.index', platform='YouTube') }}"
+     class="collection-chip {% if platform_filter == 'YouTube' %}active{% endif %}">
+    ▶️ YouTube
+  </a>
+  <a href="{{ url_for('inspiration.index', platform='LinkedIn') }}"
+     class="collection-chip {% if platform_filter == 'LinkedIn' %}active{% endif %}">
+    💼 LinkedIn
+  </a>
+</div>
+
+<!-- Search & Filters -->
+<div class="filter-search-row">
+  <form method="GET" action="{{ url_for('inspiration.index') }}" style="display:contents;">
+    <input type="text" name="q" value="{{ search_q }}"
+           placeholder="🔍 Search title, tags, creator, notes…">
+    <select name="platform">
       <option value="">All Platforms</option>
       {% for p in platforms %}
         <option value="{{ p }}" {% if platform_filter == p %}selected{% endif %}>{{ p }}</option>
       {% endfor %}
     </select>
-    {% if platform_filter %}
+    <select name="category">
+      <option value="">All Categories</option>
+      {% for c in categories %}
+        <option value="{{ c }}" {% if category_filter == c %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    <select name="urgency">
+      <option value="">All Urgency</option>
+      {% for u in ['High','Medium','Low'] %}
+        <option value="{{ u }}" {% if urgency_filter == u %}selected{% endif %}>{{ u }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    {% if search_q or platform_filter or category_filter or urgency_filter %}
       <a href="{{ url_for('inspiration.index') }}" class="btn btn-outline btn-sm">✕ Clear</a>
     {% endif %}
   </form>
 </div>
 
+<!-- Items Grid -->
 {% if items %}
-<div class="grid-3">
+<div class="insp-grid">
   {% for item in items %}
-  <div class="card">
-    <div class="flex-between mb-2">
-      <span class="badge badge-purple">{{ item.platform }}</span>
-      <div class="flex gap-2">
-        <a href="{{ url_for('inspiration.edit', item_id=item.id) }}" class="btn btn-outline btn-sm">Edit</a>
-        <form method="POST" action="{{ url_for('inspiration.delete', item_id=item.id) }}"
-              onsubmit="return confirm('Delete this item?')">
-          <button type="submit" class="btn btn-danger btn-sm">✕</button>
-        </form>
+  <div class="insp-card {% if item.urgency == 'High' %}urgency-high{% elif item.urgency == 'Medium' %}urgency-medium{% endif %}">
+
+    <div class="insp-card-top">
+      <div class="insp-card-title">
+        {% if item.title %}{{ item.title[:80] }}{% else %}{{ item.link[:60] if item.link else 'Untitled' }}{% endif %}
       </div>
+      {% if item.ai_analyzed %}<span class="ai-badge">✨ AI</span>{% endif %}
     </div>
-    {% if item.category %}<div class="text-muted fs-sm mb-1">{{ item.category }}</div>{% endif %}
-    {% if item.link %}
-      <a href="{{ item.link }}" target="_blank" rel="noopener"
-         class="fs-sm" style="word-break:break-all;display:block;margin-bottom:8px;">↗ {{ item.link[:60] }}{% if item.link|length > 60 %}…{% endif %}</a>
+
+    <div class="insp-card-badges">
+      {% if item.platform %}
+        <span class="badge badge-purple">{{ item.platform }}</span>
+      {% endif %}
+      {% if item.category %}
+        <span class="badge badge-pink">{{ item.category }}</span>
+      {% endif %}
+      {% if item.urgency == 'High' %}
+        <span class="badge badge-red">🔥 Urgent</span>
+      {% endif %}
+      {% if item.is_actionable %}
+        <span class="badge badge-green">✓ Actionable</span>
+      {% endif %}
+      {% if item.is_auto_routed %}
+        <span class="badge badge-blue">→ Auto-routed</span>
+      {% endif %}
+    </div>
+
+    {% if item.summary %}
+      <div class="insp-card-summary">{{ item.summary[:120] }}{% if item.summary|length > 120 %}…{% endif %}</div>
+    {% elif item.why_saved %}
+      <div class="insp-card-summary">{{ item.why_saved[:120] }}{% if item.why_saved|length > 120 %}…{% endif %}</div>
     {% endif %}
-    {% if item.why_saved %}
-      <div class="fs-sm mb-1"><span class="fw-700 text-muted">Why saved:</span> {{ item.why_saved }}</div>
+
+    {% if item.tags %}
+    <div class="insp-card-tags">
+      {% for tag in item.tags_list()[:5] %}
+        <span class="tag-mini">{{ tag }}</span>
+      {% endfor %}
+    </div>
     {% endif %}
-    {% if item.what_learned %}
-      <div class="fs-sm mb-1"><span class="fw-700 text-muted">Learned:</span> {{ item.what_learned }}</div>
-    {% endif %}
-    {% if item.action_to_take %}
-      <div class="fs-sm"><span class="fw-700 text-muted">Action:</span> {{ item.action_to_take }}</div>
-    {% endif %}
-    <div class="text-muted fs-sm mt-2">{{ item.created_at.strftime('%b %d, %Y') }}</div>
+
+    <div class="insp-card-meta">
+      {% if item.creator %}<span>👤 {{ item.creator }}</span>{% endif %}
+      {% if item.career_relevance == 'High' %}<span>⭐ High Relevance</span>{% endif %}
+      {% if item.confidence_score %}<span>🎯 {{ (item.confidence_score * 100)|int }}% conf.</span>{% endif %}
+      <span>{{ item.created_at.strftime('%b %d') }}</span>
+    </div>
+
+    <div class="insp-card-actions">
+      <a href="{{ item.link }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">↗ Open</a>
+      <a href="{{ url_for('inspiration.edit', item_id=item.id) }}" class="btn btn-sm btn-outline">✏️ Edit</a>
+      <form method="POST" action="{{ url_for('inspiration.delete', item_id=item.id) }}"
+            onsubmit="return confirm('Delete this item?')" style="margin-left:auto;">
+        <button type="submit" class="btn btn-sm btn-danger">✕</button>
+      </form>
+    </div>
   </div>
   {% endfor %}
 </div>
 {% else %}
 <div class="empty-state">
   <div class="empty-icon">✨</div>
-  <h3>No inspiration saved yet</h3>
-  <p>Save links, content, and ideas that spark your career growth.</p>
-  <a href="{{ url_for('inspiration.new') }}" class="btn btn-primary mt-3">+ Add Inspiration</a>
+  <h3>{% if search_q %}No results for "{{ search_q }}"{% else %}No inspiration saved yet{% endif %}</h3>
+  <p>
+    {% if search_q %}
+      Try different keywords or <a href="{{ url_for('inspiration.index') }}">clear the filter</a>.
+    {% else %}
+      Paste any link and let the AI agent organize it for you.
+      <a href="{{ url_for('inspiration.new') }}">Quick Capture →</a>
+    {% endif %}
+  </p>
 </div>
 {% endif %}
 {% endblock %}

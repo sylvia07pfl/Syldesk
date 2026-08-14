@@ -28,6 +28,7 @@ class User(UserMixin, db.Model):
     backup_plans = db.relationship("BackupPlan", backref="user", lazy="dynamic", cascade="all, delete-orphan")
     projects = db.relationship("Project", backref="user", lazy="dynamic", cascade="all, delete-orphan")
     notifications = db.relationship("Notification", backref="user", lazy="dynamic", cascade="all, delete-orphan")
+    agent_jobs = db.relationship("AgentJob", backref="user", lazy="dynamic", cascade="all, delete-orphan")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -70,10 +71,25 @@ class Opportunity(db.Model):
 class InspirationItem(db.Model):
     __tablename__ = "inspiration_items"
 
-    PLATFORMS = ["Instagram", "YouTube", "LinkedIn", "Twitter", "Website", "Article"]
+    PLATFORMS = ["Instagram", "YouTube", "LinkedIn", "Twitter", "Threads",
+                 "Reddit", "Website", "Article", "PDF", "Course", "Job Portal"]
+
+    AI_CATEGORIES = [
+        "Marketing", "Brand Strategy", "Digital Marketing",
+        "HR", "Recruitment", "Talent Acquisition",
+        "Finance", "Consulting", "Product Management", "UX/UI",
+        "Data", "AI", "Machine Learning", "Business Strategy",
+        "MBA", "CAT Preparation", "Internship", "Job Opportunity",
+        "Scholarship", "Course", "Networking", "Resume", "Interview",
+        "Productivity", "Personal Development", "Travel", "Health",
+        "Fitness", "Fashion", "Luxury", "Entrepreneurship",
+        "Research", "Other",
+    ]
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    # Core fields (existing)
     link = db.Column(db.Text)
     platform = db.Column(db.String(50), default="Website")
     category = db.Column(db.String(120))
@@ -83,8 +99,59 @@ class InspirationItem(db.Model):
     related_profile = db.Column(db.String(120))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Phase 5 — Smart Memory fields (new, all nullable for migration safety)
+    title = db.Column(db.String(255))
+    summary = db.Column(db.Text)
+    detailed_summary = db.Column(db.Text)
+    domain = db.Column(db.String(120))
+    topic = db.Column(db.String(120))
+    career_function = db.Column(db.String(120))
+    content_type = db.Column(db.String(50))       # reel / article / course / job / etc.
+    creator = db.Column(db.String(255))
+    company = db.Column(db.String(255))
+    tags = db.Column(db.Text)                      # comma-separated
+    keywords = db.Column(db.Text)                  # comma-separated
+    is_actionable = db.Column(db.Boolean, default=False)
+    urgency = db.Column(db.String(20), default="Low")          # High / Medium / Low
+    opportunity_value = db.Column(db.String(20), default="Low")
+    career_relevance = db.Column(db.String(20), default="Medium")
+    confidence_score = db.Column(db.Float, default=0.0)
+    revisit_date = db.Column(db.Date)
+    priority = db.Column(db.String(20), default="Medium")
+    is_auto_routed = db.Column(db.Boolean, default=False)      # was moved to another module?
+    auto_route_target = db.Column(db.String(50))               # opportunities / library / etc.
+    related_skill = db.Column(db.String(120))
+    ai_analyzed = db.Column(db.Boolean, default=False)
+
+    def tags_list(self):
+        return [t.strip() for t in (self.tags or "").split(",") if t.strip()]
+
+    def keywords_list(self):
+        return [k.strip() for k in (self.keywords or "").split(",") if k.strip()]
+
     def __repr__(self):
         return f"<InspirationItem {self.id}>"
+
+
+class AgentJob(db.Model):
+    """Tracks background agent processing jobs."""
+    __tablename__ = "agent_jobs"
+
+    STATUSES = ["queued", "running", "done", "failed"]
+    JOB_TYPES = ["analyze_link", "career_agent", "daily_brief", "smart_tag"]
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    job_type = db.Column(db.String(50), nullable=False)
+    status = db.Column(db.String(20), default="queued")
+    payload = db.Column(db.JSON)
+    result = db.Column(db.JSON)
+    error_msg = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime)
+
+    def __repr__(self):
+        return f"<AgentJob {self.job_type} {self.status}>"
 
 
 class Profile(db.Model):

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}AI Inbox{% endblock %}
+{% block page_title %}AI Inbox{% endblock %}
+
+{% block extra_css %}
+.inbox-section { margin-bottom: 32px; }
+.inbox-section-title {
+  font-size: .78rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--muted); margin-bottom: 12px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.inbox-row {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 16px; background: var(--card);
+  border: 1px solid var(--border); border-radius: var(--radius-input);
+  margin-bottom: 8px; transition: box-shadow .15s;
+}
+.inbox-row:hover { box-shadow: var(--shadow); }
+.inbox-row-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 2px; }
+.inbox-row-body { flex: 1; }
+.inbox-row-title { font-size: .9rem; font-weight: 700; color: var(--text); }
+.inbox-row-sub { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+.inbox-row-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>🧠 AI Inbox</h1>
+    <p class="subtitle">Your most important saved items — surfaced by the agent</p>
+  </div>
+  <a href="{{ url_for('inspiration.index') }}" class="btn btn-outline">← All Inspiration</a>
+</div>
+
+<!-- High Urgency -->
+{% if high_urgency %}
+<div class="inbox-section">
+  <div class="inbox-section-title">🔥 High Urgency — Action Required</div>
+  {% for item in high_urgency %}
+  <div class="inbox-row">
+    <div class="inbox-row-icon">🎯</div>
+    <div class="inbox-row-body">
+      <div class="inbox-row-title">{{ item.title or item.link[:60] }}</div>
+      <div class="inbox-row-sub">
+        {{ item.category }} · {{ item.platform }} ·
+        {{ item.action_to_take[:80] if item.action_to_take else 'No action set' }}
+      </div>
+    </div>
+    <div class="inbox-row-actions">
+      <a href="{{ item.link }}" target="_blank" class="btn btn-sm btn-outline">↗</a>
+      <a href="{{ url_for('inspiration.edit', item_id=item.id) }}" class="btn btn-sm btn-primary">Review</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Revisit Due -->
+{% if revisit_due %}
+<div class="inbox-section">
+  <div class="inbox-section-title">🔁 Revisit Due Today</div>
+  {% for item in revisit_due %}
+  <div class="inbox-row">
+    <div class="inbox-row-icon">📌</div>
+    <div class="inbox-row-body">
+      <div class="inbox-row-title">{{ item.title or item.link[:60] }}</div>
+      <div class="inbox-row-sub">
+        Revisit date: {{ item.revisit_date.strftime('%b %d, %Y') if item.revisit_date else '—' }} ·
+        {{ item.category }} · {{ item.platform }}
+      </div>
+    </div>
+    <div class="inbox-row-actions">
+      <a href="{{ item.link }}" target="_blank" class="btn btn-sm btn-outline">↗</a>
+      <a href="{{ url_for('inspiration.edit', item_id=item.id) }}" class="btn btn-sm btn-primary">Review</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- High Career Relevance -->
+{% if career_items %}
+<div class="inbox-section">
+  <div class="inbox-section-title">⭐ High Career Relevance</div>
+  {% for item in career_items %}
+  <div class="inbox-row">
+    <div class="inbox-row-icon">💼</div>
+    <div class="inbox-row-body">
+      <div class="inbox-row-title">{{ item.title or item.link[:60] }}</div>
+      <div class="inbox-row-sub">{{ item.category }} · {{ item.platform }}
+        {% if item.creator %} · {{ item.creator }}{% endif %}</div>
+    </div>
+    <div class="inbox-row-actions">
+      <a href="{{ item.link }}" target="_blank" class="btn btn-sm btn-outline">↗</a>
+      <a href="{{ url_for('inspiration.edit', item_id=item.id) }}" class="btn btn-sm btn-outline">Edit</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Unanalyzed -->
+{% if recent_unanalyzed %}
+<div class="inbox-section">
+  <div class="inbox-section-title">⚡ Not Yet AI-Analyzed</div>
+  {% for item in recent_unanalyzed %}
+  <div class="inbox-row">
+    <div class="inbox-row-icon">🔗</div>
+    <div class="inbox-row-body">
+      <div class="inbox-row-title">{{ item.link[:70] if item.link else 'Unknown' }}</div>
+      <div class="inbox-row-sub">Saved {{ item.created_at.strftime('%b %d') }} — click Edit to re-analyze</div>
+    </div>
+    <div class="inbox-row-actions">
+      <a href="{{ url_for('inspiration.edit', item_id=item.id) }}" class="btn btn-sm btn-primary">✨ Analyze</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if not high_urgency and not revisit_due and not career_items and not recent_unanalyzed %}
+<div class="empty-state">
+  <div class="empty-icon">🎉</div>
+  <h3>Inbox is clear!</h3>
+  <p>No urgent items or pending reviews. Keep capturing and let the agent do the work.</p>
+</div>
+{% endif %}
+{% endblock %}

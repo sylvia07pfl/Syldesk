@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Syldesk{% endblock %} — Your Career OS</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#e8a0b4">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
@@ -632,9 +636,17 @@
       <a href="{{ url_for('backup.index') }}" class="{% if request.endpoint and request.endpoint.startswith('backup') %}active{% endif %}">
         <span class="nav-icon">🛡️</span> Backup Plan
       </a>
+
+      <div class="sidebar-section-label">AI</div>
+      <a href="{{ url_for('inspiration.inbox') }}" class="{% if request.endpoint and request.endpoint == 'inspiration.inbox' %}active{% endif %}">
+        <span class="nav-icon">🧠</span> AI Inbox
+      </a>
+      <a href="{{ url_for('inspiration.agent_feed') }}" class="{% if request.endpoint and request.endpoint == 'inspiration.agent_feed' %}active{% endif %}">
+        <span class="nav-icon">🤖</span> Agent Feed
+      </a>
     </nav>
     <div class="sidebar-footer">
-      Syldesk v1.0 &nbsp;🌷
+      Syldesk v2.0 — Agentic &nbsp;🌷
     </div>
   </aside>
 
@@ -722,6 +734,11 @@
 </div>
 
 <script>
+  // PWA Service Worker (Phase 4)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+  }
+
   // Notification panel toggle
   const notifToggle = document.getElementById('notifToggle');
   const notifPanel  = document.getElementById('notifPanel');

@@ -2,169 +2,500 @@
 {% block title %}{{ action }} Inspiration{% endblock %}
 {% block page_title %}{{ action }} Inspiration{% endblock %}
 
+{% block extra_css %}
+.analyze-panel {
+  background: linear-gradient(135deg, #fce8ef 0%, #f5f0fc 100%);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 20px 22px;
+  margin-bottom: 24px;
+}
+.analyze-panel h3 { font-size: 0.95rem; font-weight: 800; margin-bottom: 4px; }
+.analyze-panel p  { font-size: 0.83rem; color: var(--muted); margin-bottom: 14px; }
+.url-row { display: flex; gap: 10px; align-items: stretch; }
+.url-row .form-control { flex: 1; }
+.btn-analyze {
+  background: linear-gradient(135deg, var(--lavender), #a090c8);
+  color: white; border: none;
+  padding: 0 22px; border-radius: var(--radius-input);
+  font-family: inherit; font-size: 0.9rem; font-weight: 800;
+  cursor: pointer; white-space: nowrap;
+  display: flex; align-items: center; gap: 8px;
+  transition: all .2s; min-width: 130px; justify-content: center;
+}
+.btn-analyze:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(160,144,200,.35); }
+.btn-analyze:disabled { opacity: .65; cursor: not-allowed; transform: none; }
+
+.analysis-result {
+  display: none; margin-top: 14px; padding: 14px 16px;
+  background: white; border: 1px solid var(--border); border-radius: 10px;
+}
+.analysis-result.show { display: block; }
+.result-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.result-badge {
+  padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;
+  background: var(--surface); color: var(--accent2); border: 1px solid var(--border);
+}
+.result-badge.high { background: rgba(232,160,160,.2); color: #9a3a3a; }
+.result-badge.career { background: rgba(168,197,160,.2); color: #3a7a32; }
+.confidence-bar { height: 4px; border-radius: 999px; background: var(--border); margin-top: 8px; }
+.confidence-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--lavender), var(--accent)); transition: width .5s; }
+
+.career-panel {
+  display: none; margin-top: 10px; padding: 12px 14px;
+  background: rgba(168,197,160,.1); border: 1px solid var(--success);
+  border-radius: 10px; font-size: 0.84rem;
+}
+.career-panel.show { display: block; }
+.career-panel h4 { font-size: 0.82rem; font-weight: 800; color: #3a7a32; margin-bottom: 8px; }
+.career-checklist { list-style: none; padding: 0; }
+.career-checklist li { padding: 3px 0; display: flex; gap: 6px; align-items: flex-start; color: var(--text); }
+.career-checklist li::before { content: "✓"; color: var(--success); font-weight: 800; flex-shrink: 0; }
+
+.tag-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.tag-pill {
+  padding: 2px 9px; border-radius: 20px; font-size: 0.74rem; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+  cursor: pointer; transition: all .15s;
+}
+.tag-pill:hover { background: var(--lavender); color: white; border-color: var(--lavender); }
+
+.section-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 24px 0 18px; font-size: 0.75rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+}
+.section-divider::before, .section-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+.form-hint { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+.field-filled { border-color: var(--lavender) !important; }
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
   <div>
-    <h1>{{ '✏️ Edit' if action == 'Edit' else '+ New' }} Inspiration</h1>
-    <p class="subtitle">Save something that inspires your career journey</p>
+    <h1>{{ '✏️ Edit' if action == 'Edit' else '✨ Quick Capture' }}</h1>
+    <p class="subtitle">{{ 'Update this saved inspiration' if action == 'Edit' else 'Paste any link — the AI agent will fill the rest' }}</p>
   </div>
-  <a href="{{ url_for('inspiration.index') }}" class="btn btn-outline">← Back</a>
+  <a href="{{ url_for('inspiration.index') }}" class="btn btn-outline">← Back to Inspiration</a>
 </div>
 
-<div class="card" style="max-width:640px;">
-  <form method="POST" id="inspiration-form">
+<div style="max-width:700px;">
+<form method="POST" id="insp-form">
 
-    <!-- ── Link row with Analyze button ── -->
-    <div class="form-group">
-      <label class="form-label" for="link">Link / URL</label>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input class="form-control" type="url" id="link" name="link"
-               value="{{ item.link or '' if item else '' }}"
-               placeholder="Paste any link — Instagram, YouTube, LinkedIn, website…"
-               style="flex:1;">
-        <button type="button" id="analyze-btn"
-                style="white-space:nowrap;padding:0 18px;height:42px;border-radius:var(--radius-input);
-                       background:var(--lavender);border:none;color:#fff;font-family:inherit;
-                       font-size:13px;font-weight:700;cursor:pointer;transition:opacity .2s;
-                       display:flex;align-items:center;gap:6px;">
-          <span id="analyze-spinner" style="display:none;">⏳</span>
-          <span id="analyze-label">✨ Analyze</span>
-        </button>
-      </div>
-      <!-- summary banner — shown after analysis -->
-      <div id="analyze-summary"
-           style="display:none;margin-top:8px;padding:10px 14px;border-radius:10px;
-                  background:var(--surface);border:1px solid var(--border);
-                  font-size:13px;color:var(--muted);line-height:1.5;">
-      </div>
-    </div>
-
-    <!-- ── Platform + Category row ── -->
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label" for="platform">Platform</label>
-        <select class="form-control" id="platform" name="platform">
-          {% for p in platforms %}
-            <option value="{{ p }}" {% if item and item.platform == p %}selected{% endif %}>{{ p }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="category">Category</label>
-        <input class="form-control" type="text" id="category" name="category"
-               value="{{ item.category or '' if item else '' }}"
-               placeholder="e.g. Personal Branding">
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label" for="why_saved">Why did you save this?</label>
-      <textarea class="form-control" id="why_saved" name="why_saved"
-                placeholder="What caught your attention?">{{ item.why_saved or '' if item else '' }}</textarea>
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="what_learned">What did you learn?</label>
-      <textarea class="form-control" id="what_learned" name="what_learned"
-                placeholder="Key takeaways…">{{ item.what_learned or '' if item else '' }}</textarea>
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="action_to_take">Action to take</label>
-      <textarea class="form-control" id="action_to_take" name="action_to_take"
-                placeholder="What will you do because of this?">{{ item.action_to_take or '' if item else '' }}</textarea>
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="related_profile">Related Profile / Creator</label>
-      <input class="form-control" type="text" id="related_profile" name="related_profile"
-             value="{{ item.related_profile or '' if item else '' }}"
-             placeholder="e.g. @creator, HR, Marketing">
-    </div>
-
-    <div class="flex gap-2">
-      <button type="submit" class="btn btn-primary">
-        {{ 'Save Changes' if action == 'Edit' else 'Save Inspiration' }} ✨
+  <!-- ════ AI ANALYZE PANEL ════ -->
+  {% if action == 'New' %}
+  <div class="analyze-panel">
+    <h3>✨ AI Analyze</h3>
+    <p>Paste a link below and click Analyze — platform, category, summary, tags, and all fields will be filled automatically.</p>
+    <div class="url-row">
+      <input class="form-control" type="url" id="link-input" name="link"
+             placeholder="https://instagram.com/… or any URL"
+             value="{{ item.link or '' if item else '' }}">
+      <button type="button" class="btn-analyze" id="analyze-btn">
+        <span id="spin" style="display:none">⏳</span>
+        <span id="analyze-lbl">✨ Analyze</span>
       </button>
-      <a href="{{ url_for('inspiration.index') }}" class="btn btn-outline">Cancel</a>
     </div>
-  </form>
+
+    <!-- Result summary banner -->
+    <div class="analysis-result" id="analysis-result">
+      <div class="result-badges" id="result-badges"></div>
+      <div id="result-summary" style="font-size:.86rem;color:var(--text);font-weight:600;"></div>
+      <div class="confidence-bar mt-2">
+        <div class="confidence-fill" id="conf-fill" style="width:0%"></div>
+      </div>
+      <div style="font-size:.74rem;color:var(--muted);margin-top:4px;" id="conf-label"></div>
+    </div>
+
+    <!-- Career agent panel (for jobs/internships) -->
+    <div class="career-panel" id="career-panel">
+      <h4>🎯 Career Agent Detected</h4>
+      <div id="career-details"></div>
+    </div>
+  </div>
+  {% else %}
+  <!-- Edit mode: show existing link read-only with re-analyze option -->
+  <div class="form-group">
+    <label class="form-label">Link / URL</label>
+    <div class="url-row">
+      <input class="form-control" type="url" id="link-input" name="link"
+             value="{{ item.link or '' if item else '' }}" style="flex:1">
+      <button type="button" class="btn-analyze" id="analyze-btn">✨ Re-analyze</button>
+    </div>
+  </div>
+  <div class="analysis-result" id="analysis-result">
+    <div class="result-badges" id="result-badges"></div>
+    <div id="result-summary" style="font-size:.86rem;color:var(--text);font-weight:600;"></div>
+    <div class="confidence-bar mt-2">
+      <div class="confidence-fill" id="conf-fill" style="width:0%"></div>
+    </div>
+    <div style="font-size:.74rem;color:var(--muted);margin-top:4px;" id="conf-label"></div>
+  </div>
+  <div class="career-panel" id="career-panel">
+    <h4>🎯 Career Agent Detected</h4>
+    <div id="career-details"></div>
+  </div>
+  {% endif %}
+
+  <!-- ════ CLASSIFICATION ════ -->
+  <div class="section-divider">Classification</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label" for="platform">Platform</label>
+      <select class="form-control" id="platform" name="platform">
+        {% for p in platforms %}
+          <option value="{{ p }}" {% if item and item.platform == p %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="category">Category</label>
+      <select class="form-control" id="category" name="category">
+        <option value="">— Select —</option>
+        {% for c in categories %}
+          <option value="{{ c }}" {% if item and item.category == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label" for="domain">Domain</label>
+      <input class="form-control" type="text" id="domain" name="domain"
+             value="{{ item.domain or '' if item else '' }}" placeholder="e.g. Business, Technology">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="content_type">Content Type</label>
+      <input class="form-control" type="text" id="content_type" name="content_type"
+             value="{{ item.content_type or '' if item else '' }}" placeholder="e.g. Reel, Article, Course">
+    </div>
+  </div>
+
+  <!-- ════ METADATA ════ -->
+  <div class="section-divider">Content Metadata</div>
+  <div class="form-group">
+    <label class="form-label" for="title">Title</label>
+    <input class="form-control" type="text" id="title" name="title"
+           value="{{ item.title or '' if item else '' }}" placeholder="Page or content title">
+  </div>
+  <div class="form-group">
+    <label class="form-label" for="summary">Summary</label>
+    <textarea class="form-control" id="summary" name="summary"
+              placeholder="One-line summary of this content" style="min-height:70px;">{{ item.summary or '' if item else '' }}</textarea>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label" for="creator">Creator / Author</label>
+      <input class="form-control" type="text" id="creator" name="creator"
+             value="{{ item.creator or '' if item else '' }}" placeholder="@handle or name">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="company">Company / Organization</label>
+      <input class="form-control" type="text" id="company" name="company"
+             value="{{ item.company or '' if item else '' }}" placeholder="Company name">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label" for="tags">Tags <span style="font-weight:400;text-transform:none;">(comma-separated)</span></label>
+    <input class="form-control" type="text" id="tags" name="tags"
+           value="{{ item.tags or '' if item else '' }}" placeholder="marketing, internship, AI...">
+    <div class="tag-pills" id="tag-suggestions"></div>
+  </div>
+  <div class="form-group">
+    <label class="form-label" for="keywords">Keywords</label>
+    <input class="form-control" type="text" id="keywords" name="keywords"
+           value="{{ item.keywords or '' if item else '' }}" placeholder="key concepts...">
+  </div>
+
+  <!-- ════ REFLECTIONS ════ -->
+  <div class="section-divider">My Reflections</div>
+  <div class="form-group">
+    <label class="form-label" for="why_saved">Why did you save this?</label>
+    <textarea class="form-control" id="why_saved" name="why_saved"
+              placeholder="What caught your attention?">{{ item.why_saved or '' if item else '' }}</textarea>
+  </div>
+  <div class="form-group">
+    <label class="form-label" for="what_learned">What did you learn?</label>
+    <textarea class="form-control" id="what_learned" name="what_learned"
+              placeholder="Key takeaways…">{{ item.what_learned or '' if item else '' }}</textarea>
+  </div>
+  <div class="form-group">
+    <label class="form-label" for="action_to_take">Action to take</label>
+    <textarea class="form-control" id="action_to_take" name="action_to_take"
+              placeholder="What will you do because of this?">{{ item.action_to_take or '' if item else '' }}</textarea>
+  </div>
+
+  <!-- ════ CAREER SIGNALS ════ -->
+  <div class="section-divider">Career Signals</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label" for="urgency">Urgency</label>
+      <select class="form-control" id="urgency" name="urgency">
+        {% for u in ['Low','Medium','High'] %}
+          <option value="{{ u }}" {% if item and item.urgency == u %}selected{% elif not item and u == 'Low' %}selected{% endif %}>{{ u }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="career_relevance">Career Relevance</label>
+      <select class="form-control" id="career_relevance" name="career_relevance">
+        {% for r in ['Low','Medium','High'] %}
+          <option value="{{ r }}" {% if item and item.career_relevance == r %}selected{% elif not item and r == 'Medium' %}selected{% endif %}>{{ r }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label" for="opportunity_value">Opportunity Value</label>
+      <select class="form-control" id="opportunity_value" name="opportunity_value">
+        {% for v in ['Low','Medium','High'] %}
+          <option value="{{ v }}" {% if item and item.opportunity_value == v %}selected{% elif not item and v == 'Low' %}selected{% endif %}>{{ v }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="priority">Priority</label>
+      <select class="form-control" id="priority" name="priority">
+        {% for p in ['Low','Medium','High'] %}
+          <option value="{{ p }}" {% if item and item.priority == p %}selected{% elif not item and p == 'Medium' %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label" for="related_profile">Related Profile</label>
+      <input class="form-control" type="text" id="related_profile" name="related_profile"
+             value="{{ item.related_profile or '' if item else '' }}" placeholder="HR, Marketing…">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="related_skill">Related Skill</label>
+      <input class="form-control" type="text" id="related_skill" name="related_skill"
+             value="{{ item.related_skill or '' if item else '' }}" placeholder="Python, Excel…">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label" for="revisit_date">Revisit Date</label>
+      <input class="form-control" type="date" id="revisit_date" name="revisit_date"
+             value="{{ item.revisit_date.isoformat() if item and item.revisit_date else '' }}">
+    </div>
+    <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:2px;">
+      <label class="form-check">
+        <input type="checkbox" name="is_actionable" id="is_actionable"
+               {% if item and item.is_actionable %}checked{% endif %}>
+        <span style="font-size:.88rem;font-weight:600;">Mark as Actionable</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Hidden AI fields -->
+  <input type="hidden" name="confidence_score" id="confidence_score"
+         value="{{ item.confidence_score or 0 if item else 0 }}">
+  <input type="hidden" name="ai_analyzed" id="ai_analyzed"
+         value="{{ '1' if item and item.ai_analyzed else '0' }}">
+  <input type="hidden" name="detailed_summary" id="detailed_summary"
+         value="{{ item.detailed_summary or '' if item else '' }}">
+  <input type="hidden" name="topic" id="topic"
+         value="{{ item.topic or '' if item else '' }}">
+  <input type="hidden" name="career_function" id="career_function"
+         value="{{ item.career_function or '' if item else '' }}">
+
+  <div class="flex gap-2 mt-3">
+    <button type="submit" class="btn btn-primary" style="min-width:160px;">
+      {{ 'Save Changes' if action == 'Edit' else '✨ Save Inspiration' }}
+    </button>
+    <a href="{{ url_for('inspiration.index') }}" class="btn btn-outline">Cancel</a>
+  </div>
+</form>
 </div>
 
 <script>
 (function () {
-  const btn      = document.getElementById('analyze-btn');
-  const spinner  = document.getElementById('analyze-spinner');
-  const label    = document.getElementById('analyze-label');
-  const summary  = document.getElementById('analyze-summary');
+  const btn     = document.getElementById('analyze-btn');
+  const spinner = document.getElementById('spin');
+  const lbl     = document.getElementById('analyze-lbl');
+  const panel   = document.getElementById('analysis-result');
+  const career  = document.getElementById('career-panel');
 
-  const fields = {
-    platform:       document.getElementById('platform'),
-    category:       document.getElementById('category'),
-    why_saved:      document.getElementById('why_saved'),
-    what_learned:   document.getElementById('what_learned'),
-    action_to_take: document.getElementById('action_to_take'),
-    related_profile:document.getElementById('related_profile'),
+  const F = {
+    platform:        document.getElementById('platform'),
+    category:        document.getElementById('category'),
+    domain:          document.getElementById('domain'),
+    content_type:    document.getElementById('content_type'),
+    title:           document.getElementById('title'),
+    summary:         document.getElementById('summary'),
+    creator:         document.getElementById('creator'),
+    company:         document.getElementById('company'),
+    tags:            document.getElementById('tags'),
+    keywords:        document.getElementById('keywords'),
+    why_saved:       document.getElementById('why_saved'),
+    what_learned:    document.getElementById('what_learned'),
+    action_to_take:  document.getElementById('action_to_take'),
+    urgency:         document.getElementById('urgency'),
+    career_relevance:document.getElementById('career_relevance'),
+    opportunity_value:document.getElementById('opportunity_value'),
+    priority:        document.getElementById('priority'),
+    related_profile: document.getElementById('related_profile'),
+    related_skill:   document.getElementById('related_skill'),
+    revisit_date:    document.getElementById('revisit_date'),
+    is_actionable:   document.getElementById('is_actionable'),
+    confidence_score:document.getElementById('confidence_score'),
+    ai_analyzed:     document.getElementById('ai_analyzed'),
+    detailed_summary:document.getElementById('detailed_summary'),
+    topic:           document.getElementById('topic'),
+    career_function: document.getElementById('career_function'),
   };
 
-  // Highlight a field briefly when it gets filled
-  function flash(el) {
-    el.style.transition = 'background .25s';
-    el.style.background = '#f5eefa';
-    setTimeout(() => { el.style.background = ''; }, 900);
+  function setSelect(el, val) {
+    if (!el || !val) return;
+    for (const opt of el.options) {
+      if (opt.value === val) { opt.selected = true; return; }
+    }
+    // If not found, add it (for dynamic categories)
+    const opt = new Option(val, val, true, true);
+    el.add(opt);
+    el.value = val;
   }
 
-  btn.addEventListener('click', async function () {
-    const url = document.getElementById('link').value.trim();
+  function fillField(el, val) {
+    if (!el || !val) return;
+    if (!el.value || el.value.trim() === '') {
+      el.value = val;
+      el.classList.add('field-filled');
+      setTimeout(() => el.classList.remove('field-filled'), 1200);
+    }
+  }
+
+  function renderTagPills(tagsStr) {
+    const container = document.getElementById('tag-suggestions');
+    if (!container || !tagsStr) return;
+    container.innerHTML = '';
+    tagsStr.split(',').forEach(t => {
+      t = t.trim();
+      if (!t) return;
+      const pill = document.createElement('span');
+      pill.className = 'tag-pill';
+      pill.textContent = t;
+      pill.title = 'Click to add tag';
+      pill.addEventListener('click', () => {
+        const cur = F.tags.value.trim();
+        if (!cur.split(',').map(x=>x.trim()).includes(t)) {
+          F.tags.value = cur ? cur + ', ' + t : t;
+        }
+      });
+      container.appendChild(pill);
+    });
+  }
+
+  btn.addEventListener('click', async () => {
+    const url = document.getElementById('link-input').value.trim();
     if (!url) {
-      summary.style.display = 'block';
-      summary.style.color   = 'var(--danger)';
-      summary.textContent   = '⚠️ Please paste a URL first.';
+      panel.classList.add('show');
+      document.getElementById('result-summary').textContent = '⚠️ Please paste a URL first.';
+      document.getElementById('result-summary').style.color = 'var(--danger)';
       return;
     }
 
-    // Loading state
-    btn.disabled   = true;
-    spinner.style.display = 'inline';
-    label.textContent     = 'Analyzing…';
-    summary.style.display = 'none';
+    btn.disabled = true;
+    if (spinner) spinner.style.display = 'inline';
+    lbl.textContent = 'Analyzing…';
+    panel.classList.remove('show');
+    career.classList.remove('show');
 
     try {
-      const res  = await fetch('{{ url_for("inspiration.analyze") }}', {
-        method:  'POST',
+      const resp = await fetch('{{ url_for("inspiration.analyze") }}', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ url }),
+        body: JSON.stringify({ url }),
       });
-      const data = await res.json();
+      const d = await resp.json();
+      if (d.error) throw new Error(d.error);
 
-      if (data.error) throw new Error(data.error);
+      // --- Fill all fields ---
+      setSelect(F.platform, d.platform);
+      setSelect(F.category, d.category);
 
-      // Fill platform <select>
-      for (const opt of fields.platform.options) {
-        if (opt.value === data.platform) { opt.selected = true; break; }
+      const textFields = [
+        'domain','content_type','title','summary','creator','company',
+        'tags','keywords','why_saved','what_learned','action_to_take',
+        'related_profile','related_skill','detailed_summary','topic','career_function'
+      ];
+      textFields.forEach(k => fillField(F[k], d[k]));
+
+      setSelect(F.urgency, d.urgency);
+      setSelect(F.career_relevance, d.career_relevance);
+      setSelect(F.opportunity_value, d.opportunity_value);
+      setSelect(F.priority, d.priority);
+
+      if (d.revisit_date && !F.revisit_date.value) F.revisit_date.value = d.revisit_date;
+      if (d.is_actionable) F.is_actionable.checked = true;
+
+      F.confidence_score.value = d.confidence_score || 0;
+      F.ai_analyzed.value = '1';
+
+      // --- Show result panel ---
+      const badges = document.getElementById('result-badges');
+      badges.innerHTML = '';
+      const badgeData = [
+        [d.platform, ''],
+        [d.category, 'career'],
+        [d.urgency === 'High' ? '🔥 High Urgency' : null, 'high'],
+        [d.is_actionable ? '✓ Actionable' : null, 'career'],
+        [d.career_relevance === 'High' ? '⭐ High Relevance' : null, 'career'],
+      ];
+      badgeData.forEach(([text, cls]) => {
+        if (!text) return;
+        const b = document.createElement('span');
+        b.className = 'result-badge ' + cls;
+        b.textContent = text;
+        badges.appendChild(b);
+      });
+
+      const sumEl = document.getElementById('result-summary');
+      sumEl.textContent = d.summary || '';
+      sumEl.style.color = 'var(--text)';
+
+      const confPct = Math.round((d.confidence_score || 0) * 100);
+      document.getElementById('conf-fill').style.width = confPct + '%';
+      document.getElementById('conf-label').textContent = `AI confidence: ${confPct}%`;
+
+      panel.classList.add('show');
+
+      // Tag suggestion pills
+      renderTagPills(d.tags);
+
+      // Career agent panel
+      if (d.category === 'Internship' || d.category === 'Job Opportunity' || d.category === 'Scholarship') {
+        let html = '';
+        if (d.company) html += `<p><strong>Organization:</strong> ${d.company}</p>`;
+        if (d.career_relevance) html += `<p><strong>Career relevance:</strong> ${d.career_relevance}</p>`;
+        html += '<p style="font-size:.8rem;color:#3a7a32;margin-top:6px;">🎯 This will be auto-added to your Opportunities when saved.</p>';
+        document.getElementById('career-details').innerHTML = html;
+        career.classList.add('show');
       }
-      flash(fields.platform);
-
-      // Fill text fields only when they are empty (don't overwrite user edits)
-      const textFields = ['category','why_saved','what_learned','action_to_take','related_profile'];
-      for (const key of textFields) {
-        if (!fields[key].value.trim()) {
-          fields[key].value = data[key] || '';
-          flash(fields[key]);
-        }
-      }
-
-      // Show summary banner
-      summary.style.display = 'block';
-      summary.style.color   = 'var(--muted)';
-      summary.innerHTML     = `<strong>🔍 Detected:</strong> ${data.summary}`;
 
     } catch (err) {
-      summary.style.display = 'block';
-      summary.style.color   = 'var(--danger)';
-      summary.textContent   = '⚠️ Could not analyze link. Fill fields manually.';
+      panel.classList.add('show');
+      document.getElementById('result-summary').textContent = '⚠️ Could not fetch metadata — please fill fields manually.';
+      document.getElementById('result-summary').style.color = 'var(--danger)';
     } finally {
-      btn.disabled          = false;
-      spinner.style.display = 'none';
-      label.textContent     = '✨ Analyze';
+      btn.disabled = false;
+      if (spinner) spinner.style.display = 'none';
+      lbl.textContent = '✨ Analyze';
     }
+  });
+
+  // Auto-analyze on paste
+  document.getElementById('link-input').addEventListener('paste', () => {
+    setTimeout(() => btn.click(), 120);
   });
 })();
 </script>

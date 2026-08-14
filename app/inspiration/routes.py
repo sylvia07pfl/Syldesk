@@ -1,27 +1,94 @@
+"""
+Inspiration module routes — Agentic edition
+============================================
+Phases 1-3, 5, 7 wired together here.
+"""
+
+from __future__ import annotations
+
+import re
+from datetime import date, timedelta
+
 from flask import render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from app.inspiration import inspiration
-from app.models import InspirationItem
-from app import db
-import re
-from urllib.parse import urlparse
 
+from app.inspiration import inspiration
+from app.models import InspirationItem, Notification, Opportunity, StudyMaterial
+from app import db
+from app.agent.engine import analyze_url, auto_route
+
+
+# ---------------------------------------------------------------------------
+# INDEX  — with smart filters and semantic search
+# ---------------------------------------------------------------------------
 
 @inspiration.route("/")
 @login_required
 def index():
-    platform_filter = request.args.get("platform", "")
+    platform_filter  = request.args.get("platform", "")
+    category_filter  = request.args.get("category", "")
+    domain_filter    = request.args.get("domain", "")
+    urgency_filter   = request.args.get("urgency", "")
+    search_q         = request.args.get("q", "").strip()
+
     query = InspirationItem.query.filter_by(user_id=current_user.id)
+
     if platform_filter:
         query = query.filter_by(platform=platform_filter)
+    if category_filter:
+        query = query.filter_by(category=category_filter)
+    if domain_filter:
+        query = query.filter_by(domain=domain_filter)
+    if urgency_filter:
+        query = query.filter_by(urgency=urgency_filter)
+    if search_q:
+        like = f"%{search_q}%"
+        query = query.filter(
+            db.or_(
+                InspirationItem.title.ilike(like),
+                InspirationItem.summary.ilike(like),
+                InspirationItem.category.ilike(like),
+                InspirationItem.tags.ilike(like),
+                InspirationItem.keywords.ilike(like),
+                InspirationItem.creator.ilike(like),
+                InspirationItem.company.ilike(like),
+                InspirationItem.why_saved.ilike(like),
+                InspirationItem.what_learned.ilike(like),
+                InspirationItem.domain.ilike(like),
+                InspirationItem.link.ilike(like),
+            )
+        )
+
     items = query.order_by(InspirationItem.created_at.desc()).all()
+
+    # Sidebar counts for smart collections
+    total       = InspirationItem.query.filter_by(user_id=current_user.id).count()
+    actionable  = InspirationItem.query.filter_by(user_id=current_user.id, is_actionable=True).count()
+    high_urgency = InspirationItem.query.filter_by(user_id=current_user.id, urgency="High").count()
+    auto_routed  = InspirationItem.query.filter_by(user_id=current_user.id, is_auto_routed=True).count()
+    ai_analyzed  = InspirationItem.query.filter_by(user_id=current_user.id, ai_analyzed=True).count()
+
     return render_template(
         "inspiration/index.html",
         items=items,
         platforms=InspirationItem.PLATFORMS,
+        categories=InspirationItem.AI_CATEGORIES,
         platform_filter=platform_filter,
+        category_filter=category_filter,
+        domain_filter=domain_filter,
+        urgency_filter=urgency_filter,
+        search_q=search_q,
+        total=total,
+        actionable=actionable,
+        high_urgency=high_urgency,
+        auto_routed=auto_routed,
+        ai_analyzed=ai_analyzed,
     )
 
+
+# ---------------------------------------------------------------------------
+# NEW / EDIT / DELETE
+# ---------------------------------------------------------------------------
 
 @inspiration.route("/new", methods=["GET", "POST"])
 @login_required
@@ -31,12 +98,18 @@ def new():
         _populate(item, request.form)
         db.session.add(item)
         db.session.commit()
+
+        # Phase 7 — auto-route side effects after save
+        _run_post_save_agent(item)
+
         flash("Inspiration saved! ✨", "success")
         return redirect(url_for("inspiration.index"))
+
     return render_template(
         "inspiration/form.html",
         item=None,
         platforms=InspirationItem.PLATFORMS,
+        categories=InspirationItem.AI_CATEGORIES,
         action="New",
     )
 
@@ -48,12 +121,13 @@ def edit(item_id):
     if request.method == "POST":
         _populate(item, request.form)
         db.session.commit()
-        flash("Inspiration updated!", "success")
+        flash("Inspiration updated! ✨", "success")
         return redirect(url_for("inspiration.index"))
     return render_template(
         "inspiration/form.html",
         item=item,
         platforms=InspirationItem.PLATFORMS,
+        categories=InspirationItem.AI_CATEGORIES,
         action="Edit",
     )
 
@@ -68,185 +142,336 @@ def delete(item_id):
     return redirect(url_for("inspiration.index"))
 
 
-def _populate(item, form):
-    item.link = form.get("link", "").strip()
-    item.platform = form.get("platform", "Website")
-    item.category = form.get("category", "").strip()
-    item.why_saved = form.get("why_saved", "").strip()
-    item.what_learned = form.get("what_learned", "").strip()
-    item.action_to_take = form.get("action_to_take", "").strip()
-    item.related_profile = form.get("related_profile", "").strip()
-
-
 # ---------------------------------------------------------------------------
-# Analyze endpoint — returns JSON suggestions for a given URL, no external API
+# Phase 4 — SHARE TARGET  (Android PWA share intent receiver)
 # ---------------------------------------------------------------------------
 
-_PLATFORM_RULES = [
-    (r"instagram\.com",   "Instagram"),
-    (r"youtube\.com|youtu\.be", "YouTube"),
-    (r"linkedin\.com",    "LinkedIn"),
-    (r"twitter\.com|x\.com", "Twitter"),
-]
+@inspiration.route("/share", methods=["GET", "POST"])
+@login_required
+def share_target():
+    """
+    Receives content shared from Android share sheet (PWA Web Share Target).
+    GET:  ?url=...&title=...&text=...  (from share sheet)
+    POST: form body with url / title / text
+    """
+    if request.method == "POST":
+        url   = (request.form.get("url") or "").strip()
+        title = (request.form.get("title") or "").strip()
+        text  = (request.form.get("text") or "").strip()
+    else:
+        url   = (request.args.get("url") or "").strip()
+        title = (request.args.get("title") or "").strip()
+        text  = (request.args.get("text") or "").strip()
 
-_CATEGORY_HINTS = {
-    "instagram":  "Personal Branding",
-    "youtube":    "Learning Resource",
-    "linkedin":   "Professional Networking",
-    "twitter":    "Industry Insights",
-    "medium":     "Article / Blog",
-    "substack":   "Newsletter",
-    "coursera":   "Online Course",
-    "udemy":      "Online Course",
-    "notion":     "Productivity",
-    "github":     "Tech / Projects",
-    "figma":      "Design",
-    "canva":      "Design",
-    "hbr":        "Business Strategy",
-    "forbes":     "Business Strategy",
-    "naukri":     "Job Search",
-    "internshala": "Internship",
-    "unstop":     "Competitions",
-    "youthop":    "Opportunities",
-}
+    # Extract a URL from the text field if url is empty (Instagram shares text+url)
+    if not url and text:
+        m = re.search(r"https?://[^\s]+", text)
+        if m:
+            url = m.group(0)
 
-_PROFILE_HINTS = {
-    "instagram":   "Personal Branding",
-    "linkedin":    "HR / Consulting",
-    "youtube":     "General Learning",
-    "coursera":    "MBA / Consulting",
-    "udemy":       "Skill Building",
-    "github":      "Tech Portfolio",
-    "hbr":         "Consulting",
-    "naukri":      "HR",
-    "internshala": "Internship",
-}
+    if not url:
+        flash("No URL received from share. Please paste it manually.", "warning")
+        return redirect(url_for("inspiration.new"))
 
-_WHY_TEMPLATES = {
-    "Instagram":  "Saved because this Instagram content showcased a real-world career strategy worth studying.",
-    "YouTube":    "Saved because this video explains a concept or skill directly relevant to my career goals.",
-    "LinkedIn":   "Saved because this post contains professional insight or a networking opportunity worth following up on.",
-    "Twitter":    "Saved because this thread shares a timely industry perspective I want to reference later.",
-    "Article":    "Saved because this article covers a topic that deepens my understanding of my target domain.",
-    "Website":    "Saved because this resource is directly relevant to my current career-building focus.",
-}
-
-_LEARNED_TEMPLATES = {
-    "Instagram":  "Observed how professionals present their personal brand on social media and what resonates with audiences.",
-    "YouTube":    "Gained a structured walkthrough of a skill, framework, or career concept I can apply immediately.",
-    "LinkedIn":   "Understood a professional's journey, career move, or strategic insight that I can learn from.",
-    "Twitter":    "Captured a concise industry opinion or trend that is shaping the space I want to enter.",
-    "Article":    "Absorbed a detailed breakdown of a concept, case study, or best practice in my target area.",
-    "Website":    "Discovered a tool, resource, or reference that fills a gap in my current knowledge.",
-}
-
-_ACTION_TEMPLATES = {
-    "Instagram":  "Follow this creator, study their content strategy, and apply one idea to my own profile this week.",
-    "YouTube":    "Watch fully, take notes, and identify one skill or action point to implement within 7 days.",
-    "LinkedIn":   "Connect with the author, save their profile, and engage with their next post meaningfully.",
-    "Twitter":    "Follow the author, bookmark this thread, and revisit it before my next application round.",
-    "Article":    "Read end-to-end, highlight key sections, and add key takeaways to my study notes.",
-    "Website":    "Explore the resource thoroughly and determine one actionable step to integrate into my workflow.",
-}
-
-
-def _detect_platform(url: str) -> str:
-    for pattern, name in _PLATFORM_RULES:
-        if re.search(pattern, url, re.I):
-            return name
-    parsed = urlparse(url)
-    host = parsed.netloc.lower().lstrip("www.")
-    if host.endswith(".com") or host.endswith(".org") or host.endswith(".in"):
-        return "Article" if any(k in host for k in ("medium", "substack", "blog", "news", "hbr", "forbes")) else "Website"
-    return "Website"
-
-
-def _extract_handle(url: str, platform: str) -> str:
-    """Best-effort extraction of a username/channel from the URL path."""
+    # Auto-analyze
     try:
-        path = urlparse(url).path.strip("/")
-        parts = [p for p in path.split("/") if p]
-        if not parts:
-            return ""
-        if platform == "Instagram":
-            return f"@{parts[0]}" if parts else ""
-        if platform == "YouTube":
-            # /channel/UCxxx or /@handle or /c/handle or /user/handle
-            if len(parts) >= 2 and parts[0] in ("channel", "c", "user"):
-                return parts[1]
-            if parts[0].startswith("@"):
-                return parts[0]
-            return parts[0] if len(parts) == 1 else ""
-        if platform == "LinkedIn":
-            if len(parts) >= 2 and parts[0] in ("in", "company", "school"):
-                return parts[1].replace("-", " ").title()
-            return ""
-        if platform == "Twitter":
-            return f"@{parts[0]}" if parts else ""
+        payload = analyze_url(url)
     except Exception:
-        pass
-    return ""
+        payload = {}
+
+    # Pre-fill a new item and show the form for confirmation
+    item = InspirationItem(
+        user_id=current_user.id,
+        link=url,
+        title=title or payload.get("title", ""),
+        platform=payload.get("platform", "Website"),
+        category=payload.get("category", ""),
+        summary=payload.get("summary", ""),
+        why_saved=payload.get("why_saved", ""),
+        what_learned=payload.get("what_learned", ""),
+        action_to_take=payload.get("action_to_take", ""),
+        related_profile=payload.get("related_profile", ""),
+        tags=payload.get("tags", ""),
+        keywords=payload.get("keywords", ""),
+        creator=payload.get("creator", ""),
+        is_actionable=payload.get("is_actionable", False),
+        urgency=payload.get("urgency", "Low"),
+        career_relevance=payload.get("career_relevance", "Medium"),
+        confidence_score=payload.get("confidence_score", 0.0),
+        ai_analyzed=payload.get("ai_analyzed", False),
+    )
+    db.session.add(item)
+    db.session.commit()
+    _run_post_save_agent(item)
+
+    flash(f"Shared link captured and analyzed! ✨ Platform: {item.platform}", "success")
+    return redirect(url_for("inspiration.edit", item_id=item.id))
 
 
-def _category_for(url: str, platform: str) -> str:
-    low = url.lower()
-    for keyword, cat in _CATEGORY_HINTS.items():
-        if keyword in low:
-            return cat
-    return {
-        "Instagram": "Personal Branding",
-        "YouTube":   "Learning Resource",
-        "LinkedIn":  "Professional Networking",
-        "Twitter":   "Industry Insights",
-        "Article":   "Article / Blog",
-    }.get(platform, "General")
-
-
-def _related_profile_for(url: str, platform: str) -> str:
-    low = url.lower()
-    for keyword, profile in _PROFILE_HINTS.items():
-        if keyword in low:
-            return profile
-    return {
-        "Instagram": "Personal Branding",
-        "LinkedIn":  "HR / Consulting",
-        "YouTube":   "General Learning",
-    }.get(platform, "General")
-
+# ---------------------------------------------------------------------------
+# Phase 1 — ANALYZE ENDPOINT  (rich JSON, all 8-phase metadata)
+# ---------------------------------------------------------------------------
 
 @inspiration.route("/analyze", methods=["POST"])
 @login_required
 def analyze():
-    """Return AI-style field suggestions for a pasted URL."""
+    """
+    Full AI analysis of a URL. Returns JSON with all Smart Memory fields.
+    No external API — pure heuristics + HTML meta extraction.
+    """
     data = request.get_json(silent=True) or {}
-    url = (data.get("url") or "").strip()
+    url  = (data.get("url") or "").strip()
 
     if not url:
         return jsonify({"error": "No URL provided"}), 400
 
-    platform = _detect_platform(url)
-    handle   = _extract_handle(url, platform)
-    category = _category_for(url, platform)
-    related  = _related_profile_for(url, platform)
+    try:
+        payload = analyze_url(url)
+    except Exception as exc:
+        return jsonify({"error": f"Analysis failed: {exc}"}), 500
 
-    # Build a short summary line from the URL itself
-    parsed = urlparse(url)
-    host = parsed.netloc.lstrip("www.")
-    path_hint = parsed.path.strip("/").split("/")[0] if parsed.path.strip("/") else ""
-    if handle:
-        summary = f"{platform} content from {handle} on {host}."
-    elif path_hint:
-        label = path_hint.replace("-", " ").replace("_", " ").title()
-        summary = f'{platform} resource: "{label}" from {host}.'
-    else:
-        summary = f"{platform} resource from {host}."
+    # Remove internal key before sending to client
+    payload.pop("_career", None)
 
-    return jsonify({
-        "platform":       platform,
-        "category":       category,
-        "why_saved":      _WHY_TEMPLATES.get(platform, _WHY_TEMPLATES["Website"]),
-        "what_learned":   _LEARNED_TEMPLATES.get(platform, _LEARNED_TEMPLATES["Website"]),
-        "action_to_take": _ACTION_TEMPLATES.get(platform, _ACTION_TEMPLATES["Website"]),
-        "related_profile": handle or related,
-        "summary":        summary,
-    })
+    return jsonify(payload)
+
+
+# ---------------------------------------------------------------------------
+# Phase 5 — SEMANTIC SEARCH  (keyword + field-aware)
+# ---------------------------------------------------------------------------
+
+@inspiration.route("/search")
+@login_required
+def search():
+    q = request.args.get("q", "").strip()
+    results = []
+    if q:
+        like = f"%{q}%"
+        results = InspirationItem.query.filter(
+            InspirationItem.user_id == current_user.id,
+            db.or_(
+                InspirationItem.title.ilike(like),
+                InspirationItem.summary.ilike(like),
+                InspirationItem.tags.ilike(like),
+                InspirationItem.keywords.ilike(like),
+                InspirationItem.category.ilike(like),
+                InspirationItem.creator.ilike(like),
+                InspirationItem.company.ilike(like),
+                InspirationItem.domain.ilike(like),
+                InspirationItem.why_saved.ilike(like),
+                InspirationItem.what_learned.ilike(like),
+            )
+        ).order_by(InspirationItem.created_at.desc()).limit(30).all()
+
+    return render_template(
+        "inspiration/search.html",
+        results=results,
+        q=q,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 6 — AI INBOX  (items needing review: actionable, high urgency)
+# ---------------------------------------------------------------------------
+
+@inspiration.route("/inbox")
+@login_required
+def inbox():
+    """AI Inbox — surface the most important saved items today."""
+    today = date.today()
+
+    high_urgency = InspirationItem.query.filter_by(
+        user_id=current_user.id, urgency="High", is_actionable=True
+    ).order_by(InspirationItem.created_at.desc()).limit(10).all()
+
+    revisit_due = InspirationItem.query.filter(
+        InspirationItem.user_id == current_user.id,
+        InspirationItem.revisit_date != None,
+        InspirationItem.revisit_date <= today,
+    ).order_by(InspirationItem.revisit_date.asc()).limit(10).all()
+
+    career_items = InspirationItem.query.filter(
+        InspirationItem.user_id == current_user.id,
+        InspirationItem.career_relevance == "High",
+    ).order_by(InspirationItem.created_at.desc()).limit(8).all()
+
+    recent_unanalyzed = InspirationItem.query.filter_by(
+        user_id=current_user.id, ai_analyzed=False
+    ).order_by(InspirationItem.created_at.desc()).limit(5).all()
+
+    return render_template(
+        "inspiration/inbox.html",
+        high_urgency=high_urgency,
+        revisit_due=revisit_due,
+        career_items=career_items,
+        recent_unanalyzed=recent_unanalyzed,
+        today=today,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 7 — AGENT ACTIVITY  (auto-routed items log)
+# ---------------------------------------------------------------------------
+
+@inspiration.route("/agent-feed")
+@login_required
+def agent_feed():
+    routed = InspirationItem.query.filter(
+        InspirationItem.user_id == current_user.id,
+        InspirationItem.is_auto_routed == True,
+    ).order_by(InspirationItem.created_at.desc()).limit(30).all()
+
+    recent_ai = InspirationItem.query.filter_by(
+        user_id=current_user.id, ai_analyzed=True
+    ).order_by(InspirationItem.created_at.desc()).limit(20).all()
+
+    return render_template(
+        "inspiration/agent_feed.html",
+        routed=routed,
+        recent_ai=recent_ai,
+    )
+
+
+# ---------------------------------------------------------------------------
+# HELPERS
+# ---------------------------------------------------------------------------
+
+def _populate(item: InspirationItem, form) -> None:
+    """Populate all InspirationItem fields from a form submission."""
+    # Core original fields
+    item.link            = form.get("link", "").strip()
+    item.platform        = form.get("platform", "Website")
+    item.category        = form.get("category", "").strip()
+    item.why_saved       = form.get("why_saved", "").strip()
+    item.what_learned    = form.get("what_learned", "").strip()
+    item.action_to_take  = form.get("action_to_take", "").strip()
+    item.related_profile = form.get("related_profile", "").strip()
+
+    # Phase 5 Smart Memory fields
+    item.title              = form.get("title", "").strip()
+    item.summary            = form.get("summary", "").strip()
+    item.detailed_summary   = form.get("detailed_summary", "").strip()
+    item.domain             = form.get("domain", "").strip()
+    item.topic              = form.get("topic", "").strip()
+    item.career_function    = form.get("career_function", "").strip()
+    item.content_type       = form.get("content_type", "").strip()
+    item.creator            = form.get("creator", "").strip()
+    item.company            = form.get("company", "").strip()
+    item.tags               = form.get("tags", "").strip()
+    item.keywords           = form.get("keywords", "").strip()
+    item.related_skill      = form.get("related_skill", "").strip()
+    item.urgency            = form.get("urgency", "Low")
+    item.opportunity_value  = form.get("opportunity_value", "Low")
+    item.career_relevance   = form.get("career_relevance", "Medium")
+    item.priority           = form.get("priority", "Medium")
+    item.is_actionable      = form.get("is_actionable") == "on"
+
+    # Confidence score (from hidden field set by JS after analyze)
+    try:
+        item.confidence_score = float(form.get("confidence_score", 0) or 0)
+    except (ValueError, TypeError):
+        item.confidence_score = 0.0
+
+    # ai_analyzed flag
+    if form.get("ai_analyzed") == "1":
+        item.ai_analyzed = True
+
+    # Revisit date
+    revisit_raw = form.get("revisit_date", "").strip()
+    if revisit_raw:
+        try:
+            item.revisit_date = date.fromisoformat(revisit_raw)
+        except ValueError:
+            pass
+
+
+def _run_post_save_agent(item: InspirationItem) -> None:
+    """
+    Phase 7 — synchronous post-save agent actions.
+    Runs after an item is committed so item.id is available.
+    Performs auto-routing and creates Notifications.
+    """
+    route = auto_route(item.category or "")
+    if not route:
+        return
+
+    item.is_auto_routed   = True
+    item.auto_route_target = route
+
+    if route == "opportunities" and item.category in ("Internship", "Job Opportunity", "Scholarship"):
+        # Create or find an Opportunity record
+        existing = Opportunity.query.filter_by(
+            user_id=item.user_id,
+            link=item.link,
+        ).first()
+        if not existing:
+            opp = Opportunity(
+                user_id=item.user_id,
+                title=item.title or item.category,
+                company=item.company or "",
+                link=item.link,
+                source=item.platform,
+                category=_map_opp_category(item.category),
+                priority=item.priority or "Medium",
+                status="Saved",
+                notes=(item.summary or "") + (
+                    f"\n\nAuto-captured from Inspiration. Tags: {item.tags}" if item.tags else ""
+                ),
+            )
+            db.session.add(opp)
+
+        # Notification
+        notif = Notification(
+            user_id=item.user_id,
+            title=f"🎯 New {item.category} detected",
+            message=f'"{item.title or item.link}" was auto-added to your Opportunities.',
+            notification_type="success",
+            related_model="InspirationItem",
+            related_id=item.id,
+        )
+        db.session.add(notif)
+
+    elif route == "library":
+        existing = StudyMaterial.query.filter_by(
+            user_id=item.user_id,
+            link=item.link,
+        ).first()
+        if not existing:
+            mat = StudyMaterial(
+                user_id=item.user_id,
+                title=item.title or item.category,
+                category=_map_study_category(item.category),
+                material_type=_map_material_type(item.platform),
+                link=item.link,
+                notes=item.summary or "",
+                tags=item.tags or "",
+            )
+            db.session.add(mat)
+
+        notif = Notification(
+            user_id=item.user_id,
+            title=f"📚 Added to Library",
+            message=f'"{item.title or item.link}" was auto-added to your Study Library.',
+            notification_type="info",
+            related_model="InspirationItem",
+            related_id=item.id,
+        )
+        db.session.add(notif)
+
+    db.session.commit()
+
+
+def _map_opp_category(cat: str) -> str:
+    return {"Internship": "Internship", "Job Opportunity": "Job",
+            "Scholarship": "Scholarship"}.get(cat, "Internship")
+
+
+def _map_study_category(cat: str) -> str:
+    return {"Course": "AI", "CAT Preparation": "CAT", "MBA": "MBA",
+            "Resume": "Resume", "Interview": "HR",
+            "Research": "Consulting"}.get(cat, "HR")
+
+
+def _map_material_type(platform: str) -> str:
+    return {"YouTube": "YouTube", "PDF": "PDF", "Article": "Website",
+            "Course": "Website", "Website": "Website"}.get(platform, "Website")
